@@ -10,3 +10,10 @@ export function arrangeActivityItems<T extends { id: string }>(items: T[], order
   }
   return [...result, ...byId.values()]
 }
+
+export function mergeActivityOrder(saved: string[], reordered: string[]): string[] {
+  const available = new Set(reordered)
+  const slots = [...new Set([...saved, ...reordered])]
+  let index = 0
+  return slots.map((id) => (available.has(id) ? reordered[index++] : id))
+}

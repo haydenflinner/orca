@@ -13,6 +13,7 @@ import {
 import { useTranslate, type Translate } from '@/i18n/use-translate'
 import { useAppStore } from '@/store/index'
 import type { ActivityBarItem } from './activity-bar-buttons'
+import { mergeActivityOrder } from './activity-bar-arrangement'
 import { usePluginPanelsStore } from '@/store/plugins/catalog/plugin-contribution-catalog'
 
 async function disableActivityBarPlugin(
@@ -83,6 +84,7 @@ export function ActivityBarPositionMenu({
   const t = useTranslate()
   const hidden = useAppStore((s) => s.activityBarHidden)
   const setHidden = useAppStore((s) => s.setActivityBarHidden)
+  const order = useAppStore((s) => s.activityBarOrder)
   const setOrder = useAppStore((s) => s.setActivityBarOrder)
   const index = items.findIndex((item) => item.id === itemId)
   const selected = items[index]
@@ -93,7 +95,7 @@ export function ActivityBarPositionMenu({
       return
     }
     ;[ids[index], ids[target]] = [ids[target], ids[index]]
-    setOrder(ids)
+    setOrder(mergeActivityOrder(order, ids))
   }
   const [disabling, setDisabling] = useState(false)
   return (

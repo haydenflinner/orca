@@ -22,7 +22,7 @@ import {
 } from '@dnd-kit/sortable'
 import { TopActivityOverflowMenu } from './activity-bar/activity-bar-buttons'
 import { SortableActivityButton } from './activity-bar/sortable-activity-button'
-import { arrangeActivityItems } from './activity-bar/activity-bar-arrangement'
+import { arrangeActivityItems, mergeActivityOrder } from './activity-bar/activity-bar-arrangement'
 import { getActiveChecksStatus } from './checks-panel/status/active-checks-status'
 import { useShortcutLabel } from '@/hooks/useShortcutLabel'
 import {
@@ -295,7 +295,7 @@ function RightSidebarInner(): React.JSX.Element {
                     const from = ids.indexOf(String(active.id))
                     const to = ids.indexOf(String(over.id))
                     if (from !== -1 && to !== -1) {
-                      setOrder(arrayMove(ids, from, to))
+                      setOrder(mergeActivityOrder(order, arrayMove(ids, from, to)))
                     }
                   }}
                 >
