@@ -1,5 +1,8 @@
 import React from 'react'
 import { MoreHorizontal } from 'lucide-react'
+import type { ActivityBarPosition } from '../../../../../shared/ui-chrome-types'
+import { ContextMenu, ContextMenuTrigger } from '@/components/ui/context-menu'
+import { ActivityBarPositionMenu } from './activity-bar-position-menu'
 import type { ActiveRightSidebarTab } from '../../../../../shared/ui-chrome-types'
 import type { CheckStatus as CoarseCheckStatus } from '../../../../../shared/github/pull-requests/pull-request-types'
 type CheckStatus = CoarseCheckStatus | 'cancelled'
@@ -57,8 +60,14 @@ export function TopActivityOverflowMenu({
   items,
   activeTab,
   onSelect,
-  checksStatus
+  checksStatus,
+  arrangementItems,
+  activityBarPosition,
+  onChangeActivityBarPosition
 }: {
+  arrangementItems: ActivityBarItem[]
+  activityBarPosition: ActivityBarPosition
+  onChangeActivityBarPosition: (position: ActivityBarPosition) => void
   items: ActivityBarItem[]
   activeTab: ActiveRightSidebarTab
   onSelect: (tab: ActiveRightSidebarTab) => void
@@ -110,25 +119,35 @@ export function TopActivityOverflowMenu({
           const Icon = item.icon
           const active = item.id === activeTab
           return (
-            <DropdownMenuItem
-              key={item.id}
-              onSelect={() => onSelect(item.id)}
-              data-workspace-board-dismiss=""
-              data-activity-plugin-key={item.pluginKey}
-              className={cn(active && 'bg-accent text-accent-foreground')}
-              aria-current={active ? 'page' : undefined}
-              aria-label={activityItemAriaLabel(item, item.statusIndicator, t)}
-            >
-              <Icon size={14} />
-              <span>{item.title}</span>
-              {item.statusIndicator === 'failure' ? (
-                <span
-                  className={cn('ml-auto size-2 rounded-full', STATUS_DOT_COLOR.failure)}
-                  aria-hidden="true"
-                />
-              ) : null}
-              {item.shortcut && <DropdownMenuShortcut>{item.shortcut}</DropdownMenuShortcut>}
-            </DropdownMenuItem>
+            <ContextMenu key={item.id}>
+              <ContextMenuTrigger asChild>
+                <DropdownMenuItem
+                  onSelect={() => onSelect(item.id)}
+                  data-workspace-board-dismiss=""
+                  data-activity-plugin-key={item.pluginKey}
+                  className={cn(active && 'bg-accent text-accent-foreground')}
+                  aria-current={active ? 'page' : undefined}
+                  aria-label={activityItemAriaLabel(item, item.statusIndicator, t)}
+                >
+                  <Icon size={14} />
+                  <span>{item.title}</span>
+                  {item.statusIndicator === 'failure' ? (
+                    <span
+                      className={cn('ml-auto size-2 rounded-full', STATUS_DOT_COLOR.failure)}
+                      aria-hidden="true"
+                    />
+                  ) : null}
+                  {item.shortcut && <DropdownMenuShortcut>{item.shortcut}</DropdownMenuShortcut>}
+                </DropdownMenuItem>
+              </ContextMenuTrigger>
+              <ActivityBarPositionMenu
+                currentPosition={activityBarPosition}
+                onChangePosition={onChangeActivityBarPosition}
+                pluginKey={item.pluginKey}
+                itemId={item.id}
+                items={arrangementItems}
+              />
+            </ContextMenu>
           )
         })}
       </DropdownMenuContent>

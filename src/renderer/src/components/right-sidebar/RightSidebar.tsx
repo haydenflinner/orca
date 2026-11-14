@@ -312,6 +312,9 @@ function RightSidebarInner(): React.JSX.Element {
                     activeTab={effectiveTab}
                     onSelect={selectActivityTab}
                     checksStatus={checksStatus}
+                    arrangementItems={orderedItems}
+                    activityBarPosition={activityBarPosition}
+                    onChangeActivityBarPosition={setActivityBarPosition}
                   />
                 )}
               </TooltipProvider>

@@ -85,6 +85,9 @@ export function RightSidebarTopActivityBar({
                       activeTab={effectiveTab}
                       onSelect={onSelectTab}
                       checksStatus={checksStatus}
+                      arrangementItems={arrangementItems}
+                      activityBarPosition={activityBarPosition}
+                      onChangeActivityBarPosition={onChangeActivityBarPosition}
                     />
                   )}
                 </div>
@@ -147,6 +150,9 @@ export function RightSidebarTopActivityBar({
                   activeTab={effectiveTab}
                   onSelect={onSelectTab}
                   checksStatus={checksStatus}
+                  arrangementItems={arrangementItems}
+                  activityBarPosition={activityBarPosition}
+                  onChangeActivityBarPosition={onChangeActivityBarPosition}
                 />
               )}
             </div>
