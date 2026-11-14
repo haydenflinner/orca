@@ -108,7 +108,7 @@ export function ActivityBarPositionMenu({
           <ContextMenuItem disabled={index === items.length - 1} onSelect={() => move(1)}>
             {t('activityBar.moveDown', 'Move down')}
           </ContextMenuItem>
-          {selected.pluginKey && (
+          {selected.pluginKey && !hidden.includes(selected.id) && (
             <ContextMenuItem onSelect={() => setHidden([...hidden, selected.id])}>
               {t('activityBar.hide', 'Hide')}
             </ContextMenuItem>
