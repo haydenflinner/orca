@@ -27,3 +27,18 @@ it('paints a theme-chosen editor selection instead of the ring', () => {
   expect(theme?.data.colors['editor.selectionBackground']).toBe('#ff2a6d66')
   expect(theme?.data.colors['editor.inactiveSelectionBackground']).toBe('#ff2a6d33')
 })
+
+it('keeps an unfocused selection at full strength when halving it would hide the text', () => {
+  const tokens: Record<string, string> = {
+    '--background': '#ffffff',
+    '--foreground': '#767676',
+    '--editor-selection': '#000000fe'
+  }
+  const theme = derivePluginMonacoTheme({
+    base: 'light',
+    read: (token) => tokens[token] ?? '',
+    painted: tokens,
+    probe
+  })
+  expect(theme?.data.colors['editor.inactiveSelectionBackground']).toBe('#000000fe')
+})
