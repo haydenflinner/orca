@@ -5,7 +5,7 @@ import {
   setRuntimeGraphSyncEnabled
 } from './graph-sync-scheduler'
 import type { AppState } from '../../store/types'
-import type { RuntimeSyncWindowGraph } from '../../../../shared/runtime-session-contracts'
+import type { RuntimeSyncWindowGraph } from '../../../../shared/remote-runtime/session-graph/runtime-session-contracts'
 
 function leafIdFor(index: number): string {
   return `${String(index).padStart(8, '0')}-1111-4111-8111-111111111111`

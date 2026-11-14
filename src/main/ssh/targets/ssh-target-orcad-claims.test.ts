@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import type { SshRemotePtyLease, SshTarget } from '../../../shared/ssh-types'
+import type { SshRemotePtyLease, SshTarget } from '../../../shared/remote-runtime/ssh/ssh-types'
 import { SshTargetOrcadClaims } from './ssh-target-orcad-claims'
 import { emptyDependentStateStore } from './testing/ssh-target-orcad-dependents-fixture'
 

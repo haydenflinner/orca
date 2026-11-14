@@ -1,10 +1,10 @@
-import type * as WslPaths from '../../../shared/wsl-paths'
+import type * as WslPaths from '../../../shared/file-access/wsl-paths'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import type { WslResult, WslSpec } from '../../wsl/execution/wsl-runner'
 
 const runWslProcess = vi.hoisted(() => vi.fn<(spec: WslSpec) => Promise<WslResult>>())
 vi.mock('../../wsl/execution/wsl-runner', () => ({ runWslProcess }))
-vi.mock('../../../shared/wsl-paths', async (importOriginal) => ({
+vi.mock('../../../shared/file-access/wsl-paths', async (importOriginal) => ({
   ...(await importOriginal<typeof WslPaths>()),
   ...(await (() => ({
     toWindowsWslPath: (linuxPath: string, distro: string) =>

@@ -2,7 +2,7 @@
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createOrchestrationWorkerReleaseHarness } from '../testing/worker-release.test-support'
-import type { RuntimeTerminalWait } from '../../../../../../../shared/runtime-terminal-contracts'
+import type { RuntimeTerminalWait } from '../../../../../../../shared/terminal/runtime/runtime-terminal-contracts'
 
 const RETRY_PANE_KEY = 'tab_retry:cccccccc-cccc-4ccc-8ccc-cccccccccccc'
 const BLOCKED_WAIT: RuntimeTerminalWait = {

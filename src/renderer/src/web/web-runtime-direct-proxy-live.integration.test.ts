@@ -2,7 +2,7 @@ import { pairedRuntimeConnectionFromOffer } from '../../../shared/remote-runtime
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import type { Repo } from '../../../shared/repo-types'
 import type { Worktree } from '../../../shared/worktree/types'
-import type { RuntimeRpcResponse } from '../../../shared/runtime-rpc-envelope'
+import type { RuntimeRpcResponse } from '../../../shared/remote-runtime/rpc/runtime-rpc-envelope'
 import type { WorkspacePortScanResult } from '../../../shared/workspace-ports'
 import { parseWebPairingInput, type WebPairingOffer } from './web-pairing'
 import { WebRuntimeClient } from './web-runtime-client'

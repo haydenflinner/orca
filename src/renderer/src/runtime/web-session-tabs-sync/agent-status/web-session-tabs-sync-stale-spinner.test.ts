@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { RuntimeMobileSessionTerminalClientTab } from '../../../../../shared/runtime-mobile-session-tab-contracts'
+import type { RuntimeMobileSessionTerminalClientTab } from '../../../../../shared/remote-runtime/session-graph/runtime-mobile-session-tab-contracts'
 
 import { makePaneKey } from '../../../../../shared/workspace-layout/stable-pane-id'
 import { resolveTerminalTabActivityStatus } from '../../../components/tab-bar/terminal-tab-activity-status'

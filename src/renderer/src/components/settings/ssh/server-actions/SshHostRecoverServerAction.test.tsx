@@ -4,8 +4,8 @@
 import { act, type ReactNode } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { OrcadManagedStaleLockReclaimResult } from '../../../../../../shared/orcad-managed-runtime'
-import type { SshManagedServerStatus } from '../../../../../../shared/ssh-types'
+import type { OrcadManagedStaleLockReclaimResult } from '../../../../../../shared/remote-runtime/orcad-lifecycle/orcad-managed-runtime'
+import type { SshManagedServerStatus } from '../../../../../../shared/remote-runtime/ssh/ssh-types'
 import { SshHostRecoverServerDialog } from './SshHostRecoverServerAction'
 
 vi.mock('../../../ui/dialog', () => ({

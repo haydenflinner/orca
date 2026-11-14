@@ -8,7 +8,7 @@ import {
 import {
   ORCAD_MIGRATION_BLOB_CHANNEL_RUNTIME_CAPABILITY,
   ORCAD_MIGRATION_CATALOG_RUNTIME_CAPABILITY
-} from '../../../../shared/orcad-runtime-capabilities'
+} from '../../../../shared/remote-runtime/protocol/orcad-runtime-capabilities'
 import { encodePairingOffer } from '../../../../shared/remote-runtime/pairing/pairing'
 import { PAIRING_OFFER_VERSION } from '../../../../shared/remote-runtime/pairing/mobile-relay-pairing-offer'
 

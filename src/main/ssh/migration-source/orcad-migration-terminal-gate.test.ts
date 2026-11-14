@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { SshRemotePtyLease } from '../../../shared/ssh-types'
+import type { SshRemotePtyLease } from '../../../shared/remote-runtime/ssh/ssh-types'
 import {
   assessOrcadMigrationTerminals,
   confirmOrcadMigrationTerminalsUnderFence

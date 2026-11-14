@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { ORCAD_UPDATE_ADMISSION_STOP_BY_MS } from '../../../shared/orcad-terminal-census'
+import { ORCAD_UPDATE_ADMISSION_STOP_BY_MS } from '../../../shared/remote-runtime/orcad-lifecycle/orcad-terminal-census'
 import { runFencedStop, type FencedStop } from './orcad-fenced-stop'
 
 const idle = { liveSessions: 0, startedSinceActivation: 0, daemonProtocolVersion: 3 }

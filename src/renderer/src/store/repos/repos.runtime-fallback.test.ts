@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createTestStore } from '../testing/app-store-test-fixture'
 import type { Repo } from '../../../../shared/repo-types'
-import '../../../../shared/worktree-runtime-capabilities'
+import '../../../../shared/remote-runtime/protocol/worktree-runtime-capabilities'
 import '../../../../shared/protocol-version'
 import {
   createCompatibleRuntimeStatusResponseIfNeeded,

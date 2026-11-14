@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import 'zustand/shallow'
-import type { RuntimeMobileSessionTabsResult } from '../../../../../shared/runtime-session-contracts'
+import type { RuntimeMobileSessionTabsResult } from '../../../../../shared/remote-runtime/session-graph/runtime-session-contracts'
 import '../../../../../shared/workspace-layout/terminal-surface-id'
 import type { BrowserCertificateFailure } from '../../../../../shared/browser-workspace-types'
-import type { RuntimeBrowserPlacement } from '../../../../../shared/runtime-browser-placement'
+import type { RuntimeBrowserPlacement } from '../../../../../shared/browser/client-hosting/runtime-browser-placement'
 import { applyWebSessionTabsSnapshot } from '../snapshot-api'
 import { resetWebSessionTabsSnapshotFreshnessForTests } from '../tracking-lifecycle'
 import type { WebSessionTabsSyncState } from '../state'

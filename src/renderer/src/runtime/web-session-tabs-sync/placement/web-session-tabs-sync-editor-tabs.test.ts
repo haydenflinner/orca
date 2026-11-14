@@ -1,4 +1,4 @@
-import type { RuntimeMobileSessionMarkdownTab } from '../../../../../shared/runtime-mobile-session-tab-contracts'
+import type { RuntimeMobileSessionMarkdownTab } from '../../../../../shared/remote-runtime/session-graph/runtime-mobile-session-tab-contracts'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import 'node:path'
 

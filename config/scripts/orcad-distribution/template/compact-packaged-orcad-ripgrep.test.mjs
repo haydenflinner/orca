@@ -10,7 +10,7 @@ import '../../../../src/main/orcad/artifact-slots/orcad-artifact-identity.ts'
 import {
   ORCAD_TEMPLATE_MANIFEST_FILENAME,
   orcadRipgrepArtifact
-} from '../../../../src/shared/orcad-artifacts.ts'
+} from '../../../../src/shared/remote-runtime/orcad-distribution/orcad-artifacts.ts'
 import { writeOrcadTemplateTestFixture } from './orcad-template-test-fixture.mjs'
 
 const require = createRequire(import.meta.url)

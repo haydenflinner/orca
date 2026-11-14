@@ -8,7 +8,7 @@ vi.mock('@/store/index', () => ({
   }
 }))
 
-import { wslHostStoppedMessage } from '../../../../../../shared/wsl-host-stopped-message'
+import { wslHostStoppedMessage } from '../../../../../../shared/remote-runtime/wsl-hosts/wsl-host-stopped-message'
 import { flushAsyncTicks } from '../../pty-connection/test-fixtures/pty-connection-test-async'
 import { createRemoteRuntimeTransportMocks } from '../remote/remote-runtime-pty-transport-test-harness'
 import type { MultiplexSubscriptionCallbacks } from '../remote/remote-runtime-pty-transport-stream-fixtures'

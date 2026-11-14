@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import type { RemoteLayoutSnapshot } from '../../shared/remote-layout-snapshot'
-import type { RuntimeRpcResponse } from '../../shared/runtime-rpc-envelope'
+import type { RemoteLayoutSnapshot } from '../../shared/remote-runtime/session-graph/remote-layout-snapshot'
+import type { RuntimeRpcResponse } from '../../shared/remote-runtime/rpc/runtime-rpc-envelope'
 
 import {
   recordRemoteLayoutFrame,

@@ -13,7 +13,7 @@ import type {
   OrcadMigrationCatalogState,
   OrcadMigrationManifest
 } from '../../../../shared/orcad-migration/orcad-migration-manifest'
-import { ORCAD_MIGRATION_BLOB_CHANNEL_RUNTIME_CAPABILITY } from '../../../../shared/orcad-runtime-capabilities'
+import { ORCAD_MIGRATION_BLOB_CHANNEL_RUNTIME_CAPABILITY } from '../../../../shared/remote-runtime/protocol/orcad-runtime-capabilities'
 import {
   inspectOrcadMigrationBlobUploads,
   stageOrcadMigrationBlobChunk

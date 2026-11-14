@@ -1,6 +1,6 @@
 // Live parked leaves preserve paired-client terminal handles (STA-2854); unmount alone must not invalidate actively viewed streams. Park watchers prove liveness and retire on reveal/close/exit/workspace teardown so dead terminals still disappear.
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import type { RuntimeSyncWindowGraph } from '../../../../shared/runtime-session-contracts'
+import type { RuntimeSyncWindowGraph } from '../../../../shared/remote-runtime/session-graph/runtime-session-contracts'
 import { ORCA_LAYOUT_OWNER_IS_MAIN } from '../../../../shared/layout-owner-switch'
 import type { AppState } from '../../store/types'
 import type { TerminalTab } from '../../../../shared/workspace-layout/terminal-tab-types'

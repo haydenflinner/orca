@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { AppState } from '../../../types'
 import 'sonner'
 import type { ListDetectedWorktreesArgs } from '../../../../../../shared/detected-worktree-provider-contract'
-import type { SshProviderEpoch } from '../../../../../../shared/ssh-types'
+import type { SshProviderEpoch } from '../../../../../../shared/remote-runtime/ssh/ssh-types'
 import { clearHugeRepoWarningDismissalsForTests } from '@/lib/source-control/warnings/source-control-huge-repo-warning-dismissals'
 import { useAppStore } from '@/store/index'
 import {
