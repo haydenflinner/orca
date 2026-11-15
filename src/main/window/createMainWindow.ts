@@ -168,6 +168,10 @@ export function createMainWindow(
     }
   })
   rememberWindowMaterial(mainWindow, windowMaterial)
+  // Dozens of subsystems legitimately attach window/webContents lifecycle hooks; keep the leak tripwire above that count.
+  const WINDOW_LISTENER_TRIPWIRE = 100
+  mainWindow.setMaxListeners(WINDOW_LISTENER_TRIPWIRE)
+  mainWindow.webContents.setMaxListeners(WINDOW_LISTENER_TRIPWIRE)
   const rendererWebContentsId = mainWindow.webContents.id
   installWindowsPathRegistryChangeListener(mainWindow)
   // Native paste fallback is privileged; trust only the top-level renderer.
