@@ -35,6 +35,7 @@ import {
   mergeOpenCodeGenerationArgs
 } from '../../../text-generation/launch/opencode-generation-command'
 import { buildAntigravityGenerationInput } from '../../../text-generation/output/antigravity-generation-stream'
+import { devinTextTaskFiles } from './devin-text-task-config'
 
 // Share pure request/prompt-to-spawn validation and argv planning between local main and SSH JSON-RPC generators.
 
@@ -244,6 +245,7 @@ export function planCommitMessageGeneration(
     input.agentId === 'kimi'
       ? findRecipeOption(generationArgs, ['--output-format'], KIMI_VALUE_OPTIONS)
       : null
+  const devinTaskFiles = devinTextTaskFiles(input.agentId, generationArgs)
   const directOpenCode = isDirectOpenCodeGenerationCommand(
     command.binary,
     merged.prefixArgs.map(generationArgumentText)
@@ -280,6 +282,7 @@ export function planCommitMessageGeneration(
             }
           }
         : {}),
+      ...(devinTaskFiles ? { taskFiles: devinTaskFiles } : {}),
       label: spec.label,
       ...(input.agentId === 'codex'
         ? {
