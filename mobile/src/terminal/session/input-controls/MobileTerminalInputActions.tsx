@@ -12,6 +12,7 @@ import {
   COMPOSER_CONTROL_HIT_SLOP,
   composerInputStyles
 } from '../../../components/composer-input/composer-input-styles'
+import { ComposerSendButton } from '../../../components/composer-input/ComposerSendButton'
 import { useMobileTranslation } from '../../../i18n/use-mobile-translation'
 import { useMobileColorScheme } from '../../../theme/use-mobile-color-scheme'
 import { keepHeldPressThroughLongPress } from '../../../platform/held-press-long-press'
@@ -36,6 +37,9 @@ type MobileTerminalDictationButtonProps = {
   readonly dictationEnabled?: boolean
   readonly buttonStyle: StyleProp<ViewStyle>
   readonly disabledButtonStyle: StyleProp<ViewStyle>
+  // Dictated words already typed into the terminal, still waiting on Enter.
+  readonly dictationSendPending?: boolean
+  readonly onDictationSend?: () => void
   // The ✕ on the field that a held mic may be released over.
   readonly dictationCancelRef: RefObject<HostInstance | null>
   readonly onDictationToggle: () => void
@@ -59,6 +63,7 @@ type MobileTerminalInputActionsProps = MobileTerminalDictationButtonProps &
 export function MobileTerminalInputActions(props: MobileTerminalInputActionsProps) {
   const { isStarting, isRecording, isProcessing } = props.dictation
   const live = useContext(MobileDictationLiveContext)
+  const t = useMobileTranslation()
   // A kept failure is cleared by every start and Retry, so it never shows while dictating.
   const failureReason = live?.failureReason ?? null
   // Attach steps aside while dictating or holding a failed recording, so the field gets the room.
@@ -72,6 +77,14 @@ export function MobileTerminalInputActions(props: MobileTerminalInputActionsProp
       ) : (
         <MobileTerminalDictationButton {...props} />
       )}
+      {/* After the mic's stop, Send submits the dictated words without opening the keyboard. */}
+      {isProcessing || props.dictationSendPending ? (
+        <ComposerSendButton
+          onPress={() => props.onDictationSend?.()}
+          canSend={props.dictationSendPending === true && props.canSend}
+          label={t('session.terminalInputActions.sendDictatedInput', 'Send dictated input')}
+        />
+      ) : null}
     </>
   )
 }
