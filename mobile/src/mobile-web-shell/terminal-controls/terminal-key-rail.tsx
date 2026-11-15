@@ -35,6 +35,7 @@ const SHELL_ROW: readonly BridgeTerminalKeyId[] = [
   'escape',
   'ctrl',
   'tab',
+  'enter',
   'alt',
   'shift',
   ...['/', '|', '~', '-', ':'].map((character) => `char:${character}` as const)

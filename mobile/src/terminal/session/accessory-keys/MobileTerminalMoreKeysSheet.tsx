@@ -7,7 +7,7 @@ import type { MobileSessionController } from '../../../session/use-mobile-sessio
 
 const ARROW_IDS = ['arrowUp', 'arrowDown', 'arrowLeft', 'arrowRight']
 // Built-in keys each row already shows; the ⋯ sheet offers the rest.
-const SHELL_ROW_KEY_IDS: ReadonlySet<string> = new Set(['escape', 'tab', ...ARROW_IDS])
+const SHELL_ROW_KEY_IDS: ReadonlySet<string> = new Set(['escape', 'tab', 'enter', ...ARROW_IDS])
 const AGENT_ROW_KEY_IDS: ReadonlySet<string> = new Set([
   'escape',
   'shiftTab',

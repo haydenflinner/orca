@@ -89,6 +89,14 @@ If the phone has a stale host entry, remove it from the app and pair again.
 3. For native modules: `pnpm exec expo run:android`
 4. Run with `pnpm start --dev-client`
 
+### Android Emulator
+
+- Metro is unreachable on the emulator by default; run `adb reverse tcp:8081 tcp:8081` and open the `http://127.0.0.1:8081` dev-server entry in the app.
+- Pair by deep link instead of the camera: `adb shell am start -a android.intent.action.VIEW -d 'orca://pair?code=<code>' -n dev.orca.app/.MainActivity`.
+- The session WebView loads the host's mobile-web bundle, so pairing to the installed app validates that app's bundle — not the worktree's. To render worktree code, serve a worktree-built runtime: `node config/scripts/build/mobile-web-app/build-mobile-web-app-bundle.mjs`, `pnpm run build:orcad`, then run `out/orcad/orcad.js --mobile-pairing --pairing-address 10.0.2.2` with the packaged node at `out/runtimes/node-*/bin/node` and an isolated `ORCA_USER_DATA`.
+- A bare `orcad.js` launch hides every local speech model (Parakeet, Whisper, …) because `hasLocalSpeechRecognizer()` needs `ORCA_SPEECH_RECOGNIZER_DIR` — normally `orca serve` hands it the app's `transcribe-cpp`. Set `ORCA_SPEECH_RECOGNIZER_DIR=/Applications/Orca.app/Contents/Resources/node_modules` to offer local models.
+- For microphone audio in the emulator, launch with `emulator -avd <name> -allow-host-audio` and then activate the input with `adb emu avd hostmicon`. Without it the virtual mic records silence and dictation gets "no speech". On macOS the mic permission prompt is attributed to the launching process (for example `com.stablyai.orca`), not to qemu — look for that name in Privacy & Security → Microphone.
+
 ### iOS Simulator
 
 1. Install Xcode from the App Store

@@ -111,6 +111,11 @@ export function useMobileSessionDictation(
   }
 
   const destination = useMobileDictationDestination(nativeChatController)
+  // Dictated words belong to the terminal they were typed into.
+  const [dictatedEnter, setDictatedEnter] = useState<string | null>(null)
+  if (dictatedEnter !== null && dictatedEnter !== activeHandle) {
+    setDictatedEnter(null)
+  }
   // Chat dictation is inserted locally; a terminal's words are typed into it live, while it is the active one.
   const insertHere = (text: string): boolean => {
     if (destination.landsInChat(showNativeChatRef.current)) {
@@ -134,6 +139,7 @@ export function useMobileSessionDictation(
         (await sendLiveTerminalInput(insertHandle, text))
       // Live input lands in a terminal the keyboard may cover, so say where the words went.
       if (sent) {
+        setDictatedEnter(insertHandle)
         tell(nativeChatDictationCopy.inserted())
       } else {
         keepUndeliveredDictation(text)
@@ -224,6 +230,7 @@ export function useMobileSessionDictation(
       setShowDictationSetup(true)
       return
     }
+    setDictatedEnter(null)
     const routeContext = activeHandle ? { handle: activeHandle } : null
     dictationRouteContextRef.current = routeContext
     const target = destination.captureDestination(showNativeChat, activeHandle)
@@ -279,6 +286,7 @@ export function useMobileSessionDictation(
   const stopDictation = host.stop
   const cancelDictation = useCallback(() => {
     dictationRouteContextRef.current = null
+    setDictatedEnter(null)
     void dictation.cancel()
   }, [dictationRouteContextRef, dictation])
 
@@ -308,6 +316,8 @@ export function useMobileSessionDictation(
   return {
     dictation,
     dictationLeaveHold,
+    dictatedEnterPending: dictatedEnter !== null,
+    clearDictatedEnter: () => setDictatedEnter(null),
     ...previews,
     startDictation,
     cancelDictation,

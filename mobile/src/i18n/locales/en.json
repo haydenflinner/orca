@@ -2219,7 +2219,8 @@
     "terminalInputActions": {
       "sendingImage": "Sending image",
       "attachPhoto": "Attach a photo",
-      "attachFileHint": "Long press to attach a file instead"
+      "attachFileHint": "Long press to attach a file instead",
+      "sendDictatedInput": "Send dictated input"
     },
     "quickCommandEditorForm": {
       "terminalCommand": "Terminal Command",

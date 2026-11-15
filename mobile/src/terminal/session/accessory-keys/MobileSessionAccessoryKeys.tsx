@@ -134,7 +134,10 @@ export function MobileSessionAccessoryKeys({
       }
     })()
   }
-  const latchIndex = builtInKeys.findIndex((key) => key.id === 'tab') + 1
+  // Anchor latches after Enter so it stays in the row's first screen, ahead of the modifiers.
+  const enterIndex = builtInKeys.findIndex((key) => key.id === 'enter')
+  const latchIndex =
+    (enterIndex !== -1 ? enterIndex : builtInKeys.findIndex((key) => key.id === 'tab')) + 1
   const latchKeys = (
     <MobileSessionLatchKeys
       key="latches"

@@ -31,10 +31,13 @@ export function MobileSessionCommandDock({ controller }: { controller: MobileSes
     canSend,
     dictation,
     liveDictationText,
+    dictatedEnterPending,
+    clearDictatedEnter,
     cancelDictation,
     handleDictationToggle,
     handleDictationPressIn,
     handleDictationPressOut,
+    submitLiveInput,
     isAttaching,
     attachImage
   } = controller
@@ -85,6 +88,11 @@ export function MobileSessionCommandDock({ controller }: { controller: MobileSes
           onDictationPressIn={handleDictationPressIn}
           onDictationPressOut={handleDictationPressOut}
           onDictationCancel={cancelDictation}
+          dictationSendPending={dictatedEnterPending}
+          onDictationSend={() => {
+            clearDictatedEnter()
+            submitLiveInput()
+          }}
         />
       </View>
     </View>
