@@ -31,6 +31,7 @@ import type { TerminalQuickCommand } from '../terminal/quick-commands/terminal-q
 import type { TuiAgent } from '../agent-launch/catalog/tui-agent'
 import type { ZcodePlanSite } from '../agent-accounts/usage-credentials/zcode-plan-sites'
 import type {
+  AgentDashboardGrouping,
   AgentDashboardMode,
   BranchPrefixStrategy,
   FloatingTerminalTriggerLocation,
@@ -462,6 +463,10 @@ export type GlobalSettings = GlobalSettingsBase & {
   experimentalAgentDashboardMode?: AgentDashboardMode
   /** Includes stale quiet agents as a fourth Agent Dashboard column. */
   experimentalAgentDashboardShowIdle?: boolean
+  /** Agent Dashboard layout: status lanes or one tile per project. Defaults to status. */
+  experimentalAgentDashboardGrouping?: AgentDashboardGrouping
+  /** Agent Dashboard content zoom; undefined renders at the default 1. */
+  experimentalAgentDashboardFontScale?: number
   /** One-shot migration guard for defaulting the Agents view off; later explicit opt-ins persist normally. */
   experimentalActivityDefaultedOffForAllUsers?: boolean
   /** Experimental: persistent terminal-pane attention ring for bell + agent-completion events. Opt-in while tuning signal/noise. */

@@ -3,6 +3,7 @@ import type { AgentType, AgentWorkingMode } from '../contracts/agent-status-type
 import type { ExecutionHostId } from '../../execution-host/execution-host'
 import type { RepoIcon } from '../../repository/appearance/repo-icon'
 import type { TuiAgent } from '../../agent-launch/catalog/tui-agent'
+import type { AgentDashboardGrouping } from '../../ui-chrome/ui-chrome-types'
 
 /** Main renderer owns live state and relays structured-clone-safe snapshots through main to the presentation-only pop-out; no functions/class instances. */
 
@@ -174,6 +175,10 @@ export type DashboardSnapshot = {
   /** Include active map workspaces without cards; optional for older preload producers. */
   workspaces?: DashboardWorkspace[]
   showIdle?: boolean
+  /** Board layout: status lanes or one tile per project; absent means status. */
+  grouping?: AgentDashboardGrouping
+  /** Content zoom for the board; absent renders at the default 1. */
+  fontScale?: number
   /** Store-derived filters keep zero-card projects/statuses selectable; optional for older preloads. */
   filterOptions?: DashboardFilterOptions
   /** Launch choices resolved on each workspace's execution host. */

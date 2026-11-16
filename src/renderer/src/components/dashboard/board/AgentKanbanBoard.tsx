@@ -12,6 +12,7 @@ import { cn } from '@/lib/class-names'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { installWindowVisibilityInterval } from '@/lib/window-activity/window-visibility-interval'
 import { AgentKanbanLaneCardList } from './AgentKanbanLaneCardList'
+import { AgentProjectGrid } from './AgentProjectGrid'
 import { AgentDashboardToolbar } from './AgentDashboardToolbar'
 import { AgentTerminalDialog } from '../terminal-preview/AgentTerminalDialog'
 import {
@@ -164,6 +165,8 @@ export function AgentKanbanBoard({
     [visibleCards, filters, query]
   )
   const grouped = useMemo(() => groupByBucket(filteredCards), [filteredCards])
+  const grouping = snapshot.grouping ?? 'status'
+  const fontScale = snapshot.fontScale ?? 1
   const hasRelativeTimestamps = useMemo(
     () => snapshot.cards.some((card) => (card.finishedAt ?? card.startedAt) > 0),
     [snapshot.cards]
@@ -284,22 +287,39 @@ export function AgentKanbanBoard({
           onFiltersChange={setFilters}
           searchInputRef={searchInputRef}
         />
-        <div className="scrollbar-sleek flex min-h-0 flex-1 overflow-x-auto p-3">
-          {/* Auto margins center the capped board and collapse during horizontal overflow. */}
-          <div className="mx-auto flex w-full max-w-[1280px] gap-3">
-            {visibleBuckets.map((bucket) => (
-              <KanbanColumn
-                key={bucket}
-                bucket={bucket}
-                cards={grouped[bucket]}
-                repoIconsByRepoId={snapshot.repoIconsByRepoId}
-                now={now}
-                dialogPaneKey={openedCard?.paneKey ?? null}
-                onOpenTerminal={handleOpenTerminal}
-              />
-            ))}
+        {grouping === 'project' ? (
+          <div
+            className="scrollbar-sleek min-h-0 flex-1 overflow-y-auto p-3"
+            style={fontScale === 1 ? undefined : { zoom: fontScale }}
+          >
+            <AgentProjectGrid
+              cards={filteredCards}
+              repoIconsByRepoId={snapshot.repoIconsByRepoId}
+              now={now}
+              onOpenTerminal={handleOpenTerminal}
+            />
           </div>
-        </div>
+        ) : (
+          <div
+            className="scrollbar-sleek flex min-h-0 flex-1 overflow-x-auto p-3"
+            style={fontScale === 1 ? undefined : { zoom: fontScale }}
+          >
+            {/* Auto margins center the capped board and collapse during horizontal overflow. */}
+            <div className="mx-auto flex w-full max-w-[1280px] gap-3">
+              {visibleBuckets.map((bucket) => (
+                <KanbanColumn
+                  key={bucket}
+                  bucket={bucket}
+                  cards={grouped[bucket]}
+                  repoIconsByRepoId={snapshot.repoIconsByRepoId}
+                  now={now}
+                  dialogPaneKey={openedCard?.paneKey ?? null}
+                  onOpenTerminal={handleOpenTerminal}
+                />
+              ))}
+            </div>
+          </div>
+        )}
         <AgentTerminalDialog
           card={dialogCard}
           onOpenChange={handleDialogOpenChange}

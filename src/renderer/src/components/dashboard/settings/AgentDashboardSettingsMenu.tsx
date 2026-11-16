@@ -10,7 +10,10 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { SettingsSegmentedControl } from '../../settings/form-controls/SettingsFormControls'
 import { Switch } from '@/components/ui/switch'
-import type { AgentDashboardMode } from '../../../../../shared/ui-chrome/ui-chrome-types'
+import type {
+  AgentDashboardGrouping,
+  AgentDashboardMode
+} from '../../../../../shared/ui-chrome/ui-chrome-types'
 import { useTranslate } from '@/i18n/use-translate'
 import { canOpenAgentDashboardPopout } from './agent-dashboard-open-mode'
 
@@ -29,6 +32,8 @@ export function AgentDashboardSettingsMenu({
   const t = useTranslate()
   const mode = useAppStore((s) => s.settings?.experimentalAgentDashboardMode ?? 'in-window')
   const showIdle = useAppStore((s) => s.settings?.experimentalAgentDashboardShowIdle === true)
+  const grouping = useAppStore((s) => s.settings?.experimentalAgentDashboardGrouping ?? 'status')
+  const fontScale = useAppStore((s) => s.settings?.experimentalAgentDashboardFontScale ?? 1)
   const updateSettings = useAppStore((s) => s.updateSettings)
 
   const handleModeChange = (next: AgentDashboardMode): void => {
@@ -110,6 +115,77 @@ export function AgentDashboardSettingsMenu({
             <DropdownMenuSeparator />
           </>
         ) : null}
+        <div className="flex items-start justify-between gap-3 rounded-md px-1.5 py-1.5">
+          <span className="min-w-0 space-y-0.5">
+            <span className="block text-[12px] font-medium leading-4 text-foreground">
+              {t('dashboardPopout.settings.grouping', 'Group agents')}
+            </span>
+            <span className="block text-[11px] leading-4 text-muted-foreground">
+              {t(
+                'dashboardPopout.settings.groupingCopy',
+                'Lane columns by status, or one tile per project.'
+              )}
+            </span>
+          </span>
+        </div>
+        <div className="px-1.5 pb-1">
+          <SettingsSegmentedControl
+            value={grouping}
+            onChange={(next: AgentDashboardGrouping) =>
+              void updateSettings({ experimentalAgentDashboardGrouping: next })
+            }
+            ariaLabel={t('dashboardPopout.settings.grouping', 'Group agents')}
+            size="sm"
+            equalWidth
+            options={[
+              {
+                value: 'status',
+                label: t('dashboardPopout.settings.groupingStatus', 'Status')
+              },
+              {
+                value: 'project',
+                label: t('dashboardPopout.settings.groupingProject', 'Project')
+              }
+            ]}
+          />
+        </div>
+        <DropdownMenuSeparator />
+        <div className="flex items-start justify-between gap-3 rounded-md px-1.5 py-1.5">
+          <span className="min-w-0 space-y-0.5">
+            <span className="block text-[12px] font-medium leading-4 text-foreground">
+              {t('dashboardPopout.settings.fontScale', 'Text size')}
+            </span>
+            <span className="block text-[11px] leading-4 text-muted-foreground">
+              {t('dashboardPopout.settings.fontScaleCopy', 'Scale the board’s cards and headers.')}
+            </span>
+          </span>
+        </div>
+        <div className="px-1.5 pb-1">
+          <SettingsSegmentedControl
+            value={fontScale}
+            onChange={(next: number) =>
+              void updateSettings({ experimentalAgentDashboardFontScale: next })
+            }
+            ariaLabel={t('dashboardPopout.settings.fontScale', 'Text size')}
+            size="sm"
+            equalWidth
+            options={[
+              {
+                value: 0.85,
+                label: t('dashboardPopout.settings.fontSmall', 'Small')
+              },
+              {
+                value: 1,
+                label: t('dashboardPopout.settings.fontDefault', 'Default')
+              },
+              {
+                value: 1.2,
+                label: t('dashboardPopout.settings.fontLarge', 'Large')
+              }
+            ]}
+          />
+        </div>
+        <DropdownMenuSeparator />
         <div className="flex items-start justify-between gap-3 rounded-md px-1.5 py-1.5">
           <span className="min-w-0 space-y-0.5">
             <span className="block text-[12px] font-medium leading-4 text-foreground">

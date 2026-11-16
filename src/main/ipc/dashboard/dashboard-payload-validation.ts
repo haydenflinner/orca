@@ -97,6 +97,10 @@ export function isDashboardSnapshot(value: unknown): value is DashboardSnapshot 
     snapshot.cards.every(isDashboardCard) &&
     isDashboardWorkspaceList(snapshot.workspaces) &&
     (snapshot.showIdle === undefined || typeof snapshot.showIdle === 'boolean') &&
+    (snapshot.grouping === undefined ||
+      snapshot.grouping === 'status' ||
+      snapshot.grouping === 'project') &&
+    (snapshot.fontScale === undefined || isFiniteNumber(snapshot.fontScale)) &&
     isDashboardFilterOptions(snapshot.filterOptions) &&
     isDashboardLaunchOptions(snapshot.launchableAgentsByWorktreeId) &&
     isDashboardRepoIcons(snapshot.repoIconsByRepoId)
@@ -122,6 +126,10 @@ export function admitDashboardSnapshot(value: unknown): DashboardSnapshotAdmissi
     snapshot.cards.length > MAX_DASHBOARD_CARDS ||
     workspaces === null ||
     (snapshot.showIdle !== undefined && typeof snapshot.showIdle !== 'boolean') ||
+    (snapshot.grouping !== undefined &&
+      snapshot.grouping !== 'status' &&
+      snapshot.grouping !== 'project') ||
+    (snapshot.fontScale !== undefined && !isFiniteNumber(snapshot.fontScale)) ||
     !isDashboardFilterOptions(snapshot.filterOptions) ||
     !isDashboardLaunchOptions(snapshot.launchableAgentsByWorktreeId) ||
     !isDashboardRepoIcons(snapshot.repoIconsByRepoId)

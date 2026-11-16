@@ -88,6 +88,8 @@ export function buildDashboardSnapshot(
   const includeCardDetails = options.includeCardDetails !== false
   const generatedTitlesEnabled = state.settings?.tabAutoGenerateTitle === true
   const showIdle = state.settings?.experimentalAgentDashboardShowIdle === true
+  const grouping = state.settings?.experimentalAgentDashboardGrouping
+  const fontScale = state.settings?.experimentalAgentDashboardFontScale
   const turnRecords = readAgentRowTurnRecords(state)
   const activeWorktrees = collectActiveDashboardWorkspaces(state, includeCardDetails)
   const filterOptions =
@@ -241,6 +243,8 @@ export function buildDashboardSnapshot(
     cards,
     ...(workspaces ? { workspaces } : {}),
     showIdle,
+    grouping,
+    fontScale,
     filterOptions,
     repoIconsByRepoId
   }
