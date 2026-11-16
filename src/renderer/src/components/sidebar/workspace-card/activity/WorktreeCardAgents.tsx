@@ -20,7 +20,10 @@ import { useFocusedAgentPaneKey } from './focused-agent-row-highlight'
 import { CompactAgentExpansion } from './worktree-card-compact-agents'
 import { CompactAgentRow } from './worktree-card-compact-agent-row'
 import { revealCompactAgentCard } from '../../worktree-list/navigation/worktree-sidebar-reveal'
-import { useWorktreeAgentExpansionState } from './worktree-card-agents-expansion-state'
+import {
+  COMPACT_ROOT_LIST_AUTO_EXPAND_MAX,
+  useWorktreeAgentExpansionState
+} from './worktree-card-agents-expansion-state'
 import { useTranslate } from '@/i18n/use-translate'
 import { agentSendDisabledReasonLabel } from '@/lib/agent-session/messaging/agent-send-disabled-reason-label'
 import { useUiLanguageRevision } from '@/i18n/use-ui-language-revision'
@@ -69,7 +72,11 @@ function WorktreeCardAgentsBody({
   const t = useTranslate(),
     languageRevision = useUiLanguageRevision()
   const display = useWorktreeAgentDisplay()
-  const expansion = useWorktreeAgentExpansionState(worktreeId, executionHostId)
+  const expansion = useWorktreeAgentExpansionState(
+    worktreeId,
+    executionHostId,
+    roots.length <= COMPACT_ROOT_LIST_AUTO_EXPAND_MAX
+  )
   const focusedPaneKey = useFocusedAgentPaneKey(worktreeId)
   const onActivate = useWorktreeAgentActivation(worktreeId, executionHostId)
   const onDismiss = useAppStore((s) => s.dropAgentStatus)

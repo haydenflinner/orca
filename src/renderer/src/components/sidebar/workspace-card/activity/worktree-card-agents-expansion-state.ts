@@ -9,16 +9,24 @@ export type WorktreeAgentExpansionState = {
   // Child lists start collapsed so spawning subagents cannot grow the card and shift the sidebar.
   expandedLineageParents: ReadonlySet<string>
   expandedIdleChildGroups: ReadonlySet<string>
-  /** Root agents start visible; collapsing the N-agents pill is the retained override. */
+  /** Compact root lists under the auto-expand cap start open; bigger ones roll up behind the pill. */
   compactRootListExpanded: boolean
 }
 
+/** Root lists this size or smaller start expanded; bigger ones roll up behind the N-agents pill. */
+export const COMPACT_ROOT_LIST_AUTO_EXPAND_MAX = 8
+
 const EMPTY_PANE_KEYS: ReadonlySet<string> = new Set()
 
-const DEFAULT_EXPANSION_STATE: WorktreeAgentExpansionState = {
+// Shared instances keep useSyncExternalStore's getSnapshot identity stable.
+const DEFAULT_EXPANDED: WorktreeAgentExpansionState = {
   expandedLineageParents: EMPTY_PANE_KEYS,
   expandedIdleChildGroups: EMPTY_PANE_KEYS,
   compactRootListExpanded: true
+}
+const DEFAULT_COLLAPSED: WorktreeAgentExpansionState = {
+  ...DEFAULT_EXPANDED,
+  compactRootListExpanded: false
 }
 
 // Retain disclosures across virtualizer/lineage remounts in a bounded renderer-session cache; reload resets them.
@@ -47,24 +55,20 @@ function trimPersistedExpansions(): void {
   }
 }
 
-function readExpansionState(key: HostScopedWorktreeKey): WorktreeAgentExpansionState {
-  return expansionByKey.get(key) ?? DEFAULT_EXPANSION_STATE
+function readExpansionState(
+  key: HostScopedWorktreeKey,
+  defaultExpanded: boolean
+): WorktreeAgentExpansionState {
+  return expansionByKey.get(key) ?? (defaultExpanded ? DEFAULT_EXPANDED : DEFAULT_COLLAPSED)
 }
 
 function persistExpansionState(
   key: HostScopedWorktreeKey,
   state: WorktreeAgentExpansionState
 ): void {
-  // Refresh LRU order and retain only non-default disclosures.
   expansionByKey.delete(key)
-  if (
-    !state.compactRootListExpanded ||
-    state.expandedLineageParents.size > 0 ||
-    state.expandedIdleChildGroups.size > 0
-  ) {
-    expansionByKey.set(key, state)
-    trimPersistedExpansions()
-  }
+  expansionByKey.set(key, state)
+  trimPersistedExpansions()
 }
 
 const expansionListeners = new Map<HostScopedWorktreeKey, Set<() => void>>()
@@ -75,11 +79,14 @@ export function expandWorktreeAgentList(
   executionHostId: ExecutionHostId | undefined
 ): void {
   const key = expansionKey(worktreeId, executionHostId)
-  const base = readExpansionState(key)
-  if (base.compactRootListExpanded) {
+  const base = expansionByKey.get(key)
+  if (base?.compactRootListExpanded) {
     return
   }
-  persistExpansionState(key, { ...base, compactRootListExpanded: true })
+  persistExpansionState(key, {
+    ...(base ?? DEFAULT_COLLAPSED),
+    compactRootListExpanded: true
+  })
   notifyExpansion(key)
 }
 
@@ -124,11 +131,15 @@ export type WorktreeAgentExpansionControls = {
 /** Restore each worktree’s disclosures across virtualizer and sibling-lineage remounts. */
 export function useWorktreeAgentExpansionState(
   worktreeId: string,
-  executionHostId: ExecutionHostId | undefined
+  executionHostId: ExecutionHostId | undefined,
+  rootListDefaultExpanded = false
 ): WorktreeAgentExpansionControls {
   const key = expansionKey(worktreeId, executionHostId)
   const subscribe = useCallback((listener: () => void) => subscribeExpansion(key, listener), [key])
-  const getSnapshot = useCallback(() => readExpansionState(key), [key])
+  const getSnapshot = useCallback(
+    () => readExpansionState(key, rootListDefaultExpanded),
+    [key, rootListDefaultExpanded]
+  )
   const current = useSyncExternalStore(subscribe, getSnapshot, getSnapshot)
 
   const commit = useCallback(
@@ -141,27 +152,27 @@ export function useWorktreeAgentExpansionState(
 
   const toggleLineageParent = useCallback(
     (paneKey: string) => {
-      const base = readExpansionState(key)
+      const base = readExpansionState(key, rootListDefaultExpanded)
       commit({ ...base, expandedLineageParents: toggleKey(base.expandedLineageParents, paneKey) })
     },
-    [commit, key]
+    [commit, key, rootListDefaultExpanded]
   )
 
   const toggleIdleChildGroup = useCallback(
     (parentPaneKey: string) => {
-      const base = readExpansionState(key)
+      const base = readExpansionState(key, rootListDefaultExpanded)
       commit({
         ...base,
         expandedIdleChildGroups: toggleKey(base.expandedIdleChildGroups, parentPaneKey)
       })
     },
-    [commit, key]
+    [commit, key, rootListDefaultExpanded]
   )
 
   const toggleCompactRootList = useCallback(() => {
-    const base = readExpansionState(key)
+    const base = readExpansionState(key, rootListDefaultExpanded)
     commit({ ...base, compactRootListExpanded: !base.compactRootListExpanded })
-  }, [commit, key])
+  }, [commit, key, rootListDefaultExpanded])
 
   return {
     expandedLineageParents: current.expandedLineageParents,
