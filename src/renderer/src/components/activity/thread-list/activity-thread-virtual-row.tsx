@@ -1,5 +1,6 @@
-import type React from 'react'
+import React, { useContext } from 'react'
 import { useTranslate } from '@/i18n/use-translate'
+import { ActivityIndexHintsContext } from './activity-index-hints-context'
 import { clearActivityThread, isClearableActivityThread } from './activity-clear-completed'
 import { ActivityStatusGroupHeader } from './activity-thread-controls'
 import { ActivityThreadContextMenu } from './activity-thread-context-menu'
@@ -47,6 +48,7 @@ export function ActivityThreadVirtualRow({
   showJumpAction: boolean
 }): React.JSX.Element {
   const t = useTranslate()
+  const indexHints = useContext(ActivityIndexHintsContext)
   if (item.type === 'header') {
     return (
       <div
@@ -99,6 +101,8 @@ export function ActivityThreadVirtualRow({
             disableMarkUnread={!canMarkThreadUnread(item.thread)}
             showJumpAction={showJumpAction}
             previewSuppressed={menuOpen}
+            shortcutIndex={indexHints?.indexByPaneKey.get(item.thread.paneKey)}
+            shortcutModifierKeys={indexHints?.modifierKeys}
           />
         </div>
       )}

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
 import { SidebarActivityBadge } from './sidebar-activity-badge'
@@ -10,6 +10,9 @@ import { hasActivityThreadWorkspace } from '@/components/activity/thread-list/ac
 import { useActivityThreadActionBindings } from '@/components/activity/thread-list/use-activity-thread-action-bindings'
 import { ActivityThreadListPane } from '@/components/activity/thread-list/activity-thread-list-pane'
 import { subscribeAgentsListIndexJump } from '@/components/activity/agents-list-index-jump'
+import { ActivityIndexHintsContext } from '@/components/activity/activity-index-hints-context'
+import { useShortcutKeyComboDetails } from '@/hooks/useShortcutLabel'
+import { useModifierHeldClass } from '../editor/rich-markdown/viewport/useModifierHeldClass'
 import { useAgentPaneThreads } from '@/components/activity/threads/use-agent-pane-threads'
 import '@/components/activity/thread-list/activity-thread-controls'
 import { ActivityThreadOptionsMenu } from '@/components/activity/thread-list/activity-thread-options-menu'
@@ -160,6 +163,27 @@ function SidebarAgentsListBody({
     setSelectedPaneKey
   })
 
+  // Digit jumps address the first nine rows of the filtered list; hints show the same numbering.
+  const shortcutIndexByPaneKey = useMemo(
+    () => new Map(visibleThreads.slice(0, 9).map((thread, index) => [thread.paneKey, index])),
+    [visibleThreads]
+  )
+  const digitShortcutDetails = useShortcutKeyComboDetails('workspace.selectByIndex')
+  const digitShortcutModifiers = useMemo(
+    () => digitShortcutDetails[0]?.keys.slice(0, -1) ?? [],
+    [digitShortcutDetails]
+  )
+  const indexHints = useMemo(
+    () => ({ indexByPaneKey: shortcutIndexByPaneKey, modifierKeys: digitShortcutModifiers }),
+    [shortcutIndexByPaneKey, digitShortcutModifiers]
+  )
+  // Arms `agents-index-hints-armed` while the chord's modifier is held; rows reveal their digit chip.
+  useModifierHeldClass(
+    threadListRef,
+    navigator.userAgent.includes('Mac'),
+    'agents-index-hints-armed'
+  )
+
   // Cmd+digit names a row of the filtered list while this view is the sidebar body.
   useEffect(
     () =>
@@ -228,40 +252,42 @@ function SidebarAgentsListBody({
           />
         </div>
       ) : null}
-      <ActivityThreadListPane
-        activityFilterInputRef={activityFilterInputRef}
-        query={query}
-        onQueryChange={setQuery}
-        groupBy={groupBy}
-        onGroupByChange={setGroupBy}
-        readFilter={readFilter}
-        onReadFilterChange={setReadFilter}
-        compactMode={compactMode}
-        showChildAgents={showChildAgents}
-        hasUnreadThreads={hasUnreadThreads}
-        onCompactModeChange={setCompactMode}
-        onShowChildAgentsChange={setShowChildAgents}
-        onMarkAllThreadsRead={markAllThreadsRead}
-        hasCompletedThreads={hasCompletedThreads}
-        onClearCompleted={handleClearCompleted}
-        visibleThreadGroups={visibleThreadGroups}
-        visibleThreadCount={visibleThreads.length}
-        selectedPaneKey={effectiveSelectedPaneKey}
-        onSelectThread={selectThread}
-        onJumpToWorkspace={jumpToWorkspace}
-        onMarkThreadRead={markThreadRead}
-        onMarkThreadUnread={markThreadUnread}
-        onMarkThreadsRead={markThreadsRead}
-        onMarkThreadsUnread={markThreadsUnread}
-        canJumpToWorkspace={canJumpToWorkspace}
-        allowMarkUnreadWhenSelected
-        showJumpAction={false}
-        showFilterControls={false}
-        showOptionsMenu={false}
-        showInlineActions={false}
-        scrollTopRef={scrollTopRef}
-        threadListRef={threadListRef}
-      />
+      <ActivityIndexHintsContext.Provider value={indexHints}>
+        <ActivityThreadListPane
+          activityFilterInputRef={activityFilterInputRef}
+          query={query}
+          onQueryChange={setQuery}
+          groupBy={groupBy}
+          onGroupByChange={setGroupBy}
+          readFilter={readFilter}
+          onReadFilterChange={setReadFilter}
+          compactMode={compactMode}
+          showChildAgents={showChildAgents}
+          hasUnreadThreads={hasUnreadThreads}
+          onCompactModeChange={setCompactMode}
+          onShowChildAgentsChange={setShowChildAgents}
+          onMarkAllThreadsRead={markAllThreadsRead}
+          hasCompletedThreads={hasCompletedThreads}
+          onClearCompleted={handleClearCompleted}
+          visibleThreadGroups={visibleThreadGroups}
+          visibleThreadCount={visibleThreads.length}
+          selectedPaneKey={effectiveSelectedPaneKey}
+          onSelectThread={selectThread}
+          onJumpToWorkspace={jumpToWorkspace}
+          onMarkThreadRead={markThreadRead}
+          onMarkThreadUnread={markThreadUnread}
+          onMarkThreadsRead={markThreadsRead}
+          onMarkThreadsUnread={markThreadsUnread}
+          canJumpToWorkspace={canJumpToWorkspace}
+          allowMarkUnreadWhenSelected
+          showJumpAction={false}
+          showFilterControls={false}
+          showOptionsMenu={false}
+          showInlineActions={false}
+          scrollTopRef={scrollTopRef}
+          threadListRef={threadListRef}
+        />
+      </ActivityIndexHintsContext.Provider>
       {optionsTarget
         ? createPortal(
             <ActivityThreadOptionsMenu

@@ -10,6 +10,7 @@ import { useUiLanguageRevision } from '@/i18n/use-ui-language-revision'
 import '../../sidebar/workspace-card/activity/worktree-card-empty-inputs'
 import { FilledBellIcon } from '../../sidebar/workspace-card/identity/worktree-card-glyphs'
 import CommentMarkdown from '../../comment-markdown/CommentMarkdown'
+import { PaletteRowShortcutBadge } from '@/components/worktree-jump/rows/worktree-jump-palette-row-content'
 import { EventTime, ThreadAgentStateIndicator } from './activity-thread-controls'
 import { ActivityThreadHoverCard } from '../thread-preview/activity-thread-hover-card'
 import { activityThreadRowCopy } from '../threads/activity-thread-presentation'
@@ -70,7 +71,9 @@ export const ActivityThreadRow = React.memo(function ActivityThreadRow({
   compactMode,
   disableMarkUnread = false,
   showJumpAction = true,
-  previewSuppressed = false
+  previewSuppressed = false,
+  shortcutIndex,
+  shortcutModifierKeys
 }: {
   thread: AgentPaneThread
   selected: boolean
@@ -87,6 +90,9 @@ export const ActivityThreadRow = React.memo(function ActivityThreadRow({
   disableMarkUnread?: boolean
   showJumpAction?: boolean
   previewSuppressed?: boolean
+  /** Position in the digit-jump order; revealed by `agents-index-hints-armed` on the list container. */
+  shortcutIndex?: number
+  shortcutModifierKeys?: readonly string[]
 }): React.JSX.Element {
   const t = useTranslate()
   useUiLanguageRevision()
@@ -283,6 +289,17 @@ export const ActivityThreadRow = React.memo(function ActivityThreadRow({
             </div>
           </div>
         </div>
+        {shortcutIndex !== undefined ? (
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute right-1 top-1 opacity-0 transition-opacity [.agents-index-hints-armed_&]:opacity-100"
+          >
+            <PaletteRowShortcutBadge
+              index={shortcutIndex}
+              modifierKeys={shortcutModifierKeys ?? []}
+            />
+          </span>
+        ) : null}
         {/* Fills while the pointer rests; the hover card sets the attribute. Duration = rest minus progress delay. */}
         <span
           aria-hidden="true"
