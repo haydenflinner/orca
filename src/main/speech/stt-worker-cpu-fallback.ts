@@ -105,8 +105,12 @@ class SttCpuFallbackWorker extends EventEmitter implements SttWorkerProcess {
   private attach(child: SttWorkerProcess): void {
     const onMessage = (message: ChildMessage): void => this.receive(message)
     const onExit = (code: number): void => {
-      // An idle process killed from outside (OOM, Activity Monitor) is not a GPU failure.
-      if (this.canFallBack() && (!this.ready || this.streams.size > 0)) {
+      // 0 or a kill signal is an orderly or external stop (OOM, Activity Monitor), not a GPU
+      // failure. Any other unrequested exit of a GPU process is a native crash, even one before
+      // init or while idle.
+      const nativeCrash = code !== 0 && code !== 137 && code !== 143
+      const gpuCrash = !this.cpuOnly && !this.exitRequested && nativeCrash
+      if (gpuCrash || (this.canFallBack() && (!this.ready || this.streams.size > 0))) {
         this.fallBack(true)
       } else {
         this.emit('exit', code)
