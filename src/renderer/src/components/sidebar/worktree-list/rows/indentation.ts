@@ -19,7 +19,8 @@ const GROUPED_CARD_TITLE_HEADER_LABEL_OFFSET = 3
 export const PROJECT_GROUP_HEADER_BASE_PADDING = 10
 // Why: shared with project headers so titles don't shift when grouping mode changes.
 export const WORKTREE_SECTION_HEADER_PADDING_LEFT = PROJECT_GROUP_HEADER_BASE_PADDING
-export const PROJECT_GROUP_HEADER_INDENT = 10
+// Why: rows sit one groupDepth level under their header, so the header must step by the row step or nested groups look shallower than siblings.
+export const PROJECT_GROUP_HEADER_INDENT = SIDEBAR_TREE_INDENT
 export const MAX_PROJECT_GROUP_HEADER_DEPTH = 6
 
 function clampDepth(depth: number): number {
