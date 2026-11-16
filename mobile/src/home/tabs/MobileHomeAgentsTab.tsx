@@ -1,4 +1,5 @@
 import {
+  Bell,
   Bot,
   CheckCheck,
   ChevronRight,
@@ -229,6 +230,13 @@ export function MobileHomeAgentsTab(props: {
         title={t('home.tabs.agents', 'Agents')}
         trailing={
           <>
+            <MobileHomeTabHeaderButton
+              icon={Bell}
+              accessibilityLabel={t('agents.activity.toggle', 'Agents with activity')}
+              active={view.unreadOnly}
+              badge={unreadRows.length}
+              onPress={() => setView({ ...view, unreadOnly: !view.unreadOnly })}
+            />
             <MobileHomeTabHeaderButton
               icon={Search}
               accessibilityLabel={t('agents.search.toggle', 'Search agents')}

@@ -6,7 +6,7 @@ import { colors, radii, spacing } from '../../theme/mobile-theme'
 import { themedStyleSheet } from '../../theme/themed-styles'
 import { useMobileColorScheme } from '../../theme/use-mobile-color-scheme'
 
-/** A Home tab's title row: the tab's name and at most two icon buttons. */
+/** A Home tab's title row: the tab's name and at most three icon buttons. */
 export function MobileHomeTabHeader(props: { title: string; trailing?: ReactNode }) {
   useMobileColorScheme()
   return (
@@ -29,6 +29,8 @@ export function MobileHomeTabHeaderButton(props: {
   spinning?: boolean
   /** What the button opens is showing. */
   active?: boolean
+  /** Unread/activity count shown over the glyph; undefined and 0 hide it. */
+  badge?: number
   onPress: () => void
 }) {
   useMobileColorScheme()
@@ -71,6 +73,11 @@ export function MobileHomeTabHeaderButton(props: {
       >
         <Icon size={21} color={colors.textSecondary} />
       </Animated.View>
+      {props.badge ? (
+        <View style={styles.badge}>
+          <Text style={styles.badgeText}>{props.badge > 99 ? '99+' : props.badge}</Text>
+        </View>
+      ) : null}
     </Pressable>
   )
 }
@@ -100,5 +107,18 @@ const styles = themedStyleSheet(() => ({
     justifyContent: 'center'
   },
   buttonPressed: { backgroundColor: colors.bgRaised },
-  disabled: { opacity: 0.4 }
+  disabled: { opacity: 0.4 },
+  badge: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    minWidth: 16,
+    height: 16,
+    paddingHorizontal: 4,
+    borderRadius: 8,
+    backgroundColor: colors.accentBlue,
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  badgeText: { fontSize: 10, fontWeight: '700', color: colors.onAccent }
 }))
