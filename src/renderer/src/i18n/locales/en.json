@@ -20786,11 +20786,17 @@
       },
       "turnDiff": {
         "partial": "Partial diff",
-        "changedFiles_one": "{{count}} changed file",
-        "changedFiles_other": "{{count}} changed files",
         "showMoreFiles": "Show {{count}} more",
         "hide": "Hide",
-        "hidden": "Orca won't show turn diffs anymore"
+        "hidden": "Orca won't show turn diffs anymore",
+        "fileUncommitted": "uncommitted",
+        "pushed": "pushed",
+        "unpushed": "committed · unpushed",
+        "committed": "committed",
+        "filesEdited_one": "{{count}} file edited",
+        "filesEdited_other": "{{count}} files edited",
+        "uncommitted_one": "{{count}} uncommitted",
+        "uncommitted_other": "{{count}} uncommitted"
       },
       "receipt": {
         "unavailable": "Selected answer unavailable",
@@ -23157,7 +23163,16 @@
     "close": "Close dashboard",
     "settings": {
       "showIdle": "Show idle agents",
-      "showIdleCopy": "Include agents that have gone quiet for 30 minutes without reporting completion. Hidden by default."
+      "showIdleCopy": "Include agents that have gone quiet for 30 minutes without reporting completion. Hidden by default.",
+      "grouping": "Group agents",
+      "groupingCopy": "Lane columns by status, or one tile per project.",
+      "groupingStatus": "Status",
+      "groupingProject": "Project",
+      "fontScale": "Text size",
+      "fontScaleCopy": "Scale the board’s cards and headers.",
+      "fontSmall": "Small",
+      "fontDefault": "Default",
+      "fontLarge": "Large"
     },
     "settingsTooltip": "Board settings",
     "card": {
@@ -23213,6 +23228,10 @@
       "ssh": "SSH host",
       "remoteNamed": "Remote Orca host · {{host}}",
       "remote": "Remote Orca host"
+    },
+    "projectGrid": {
+      "agentCount_one": "{{count}} agent",
+      "agentCount_other": "{{count}} agents"
     }
   },
   "dashboard": {

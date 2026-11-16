@@ -920,6 +920,10 @@
           "workspaceCount_one": "{{count}} workspace",
           "workspaceCount_other": "{{count}} workspaces"
         },
+        "ImportedWorktreesHeaderBadge": {
+          "ariaLabel_one": "Show {{count}} hidden discovered worktree for {{repo}}",
+          "ariaLabel_other": "Show {{count}} hidden discovered worktrees for {{repo}}"
+        },
         "ImportedWorktreesVisibilityLine": {
           "hiding_one": "Hiding {{count}} discovered worktree",
           "hiding_other": "Hiding {{count}} discovered worktrees",
@@ -2040,8 +2044,10 @@
         "runWebSearch_other": "Searched the web {{count}} times"
       },
       "turnDiff": {
-        "changedFiles_one": "{{count}} changed file",
-        "changedFiles_other": "{{count}} changed files"
+        "filesEdited_one": "{{count}} file edited",
+        "filesEdited_other": "{{count}} files edited",
+        "uncommitted_one": "{{count}} uncommitted",
+        "uncommitted_other": "{{count}} uncommitted"
       },
       "writeNotice": {
         "agentRefused": "The agent turned this down.",
@@ -2251,6 +2257,10 @@
     "card": {
       "subagents_one": "{{count}} subagent",
       "subagents_other": "{{count}} subagents"
+    },
+    "projectGrid": {
+      "agentCount_one": "{{count}} agent",
+      "agentCount_other": "{{count}} agents"
     }
   },
   "editor": {
