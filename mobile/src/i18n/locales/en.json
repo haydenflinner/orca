@@ -5155,7 +5155,9 @@
       "placeholder": "Search agents"
     },
     "activity": {
-      "toggle": "Agents with activity"
+      "toggle": "Agents with activity",
+      "needsWindow": "Couldn’t update. Open Orca on {{desktop}}.",
+      "failed": "Couldn’t update the agent list."
     },
     "desktops": {
       "pickerTitle": "Show agents on",
@@ -5181,10 +5183,6 @@
       "read": "Read",
       "unread": "Unread",
       "clear": "Clear"
-    },
-    "activity": {
-      "needsWindow": "Couldn’t update. Open Orca on {{desktop}}.",
-      "failed": "Couldn’t update the agent list."
     }
   }
 }

@@ -13,8 +13,6 @@ import type { NoticeHostContext } from '../hosts/host-labels'
 import type { RenderableFolderWorkspace } from '../folders/folder-workspace-lanes'
 import type {
   FolderWorkspaceRow,
-  ImportedWorktreesCardCandidate,
-  ImportedWorktreesCardRow,
   NewExternalWorktreesInboxCandidate,
   NewExternalWorktreesInboxRow,
   PendingCreationRef,
@@ -34,24 +32,6 @@ export function buildPendingCreationRow(
     creationId: creation.creationId,
     repo: repoMap.get(creation.repoId),
     groupDepth
-  }
-}
-
-export function buildImportedWorktreesCardRow(
-  candidate: ImportedWorktreesCardCandidate,
-  hostContext?: NoticeHostContext,
-  groupDepth = 0
-): ImportedWorktreesCardRow {
-  return {
-    type: 'imported-worktrees-card',
-    key: `imported-worktrees-card:repo-group:${candidate.repo.id}`,
-    repo: candidate.repo,
-    hiddenWorktrees: candidate.hiddenWorktrees,
-    placement: 'repo-group',
-    groupDepth,
-    ...(hostContext
-      ? { hostContextLabel: hostContext.label, hostContextHostId: hostContext.hostId }
-      : {})
   }
 }
 

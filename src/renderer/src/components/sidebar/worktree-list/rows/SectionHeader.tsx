@@ -3,7 +3,6 @@ import {
   getRootProjectHeaderOccurrenceKey
 } from '../drag/root-project-header-drop'
 import React from 'react'
-import { ChevronDown } from 'lucide-react'
 import { ProjectHeaderHostLabel, ProjectHeaderHostTooltip } from './ProjectHeaderHostLabel'
 import type { VirtualItem } from '@tanstack/react-virtual'
 import { cn } from '@/lib/class-names'
@@ -14,7 +13,6 @@ import '@/store/project-groups/project-group-owner-routing'
 import { getRepoExecutionHostId } from '../../../../../../shared/execution-host/execution-host'
 import {
   getHeaderDragRepo,
-  isSingleHostProjectHeader,
   type GroupHeaderRow
 } from '../../../../../../shared/sidebar-list/row-types'
 import { PINNED_GROUP_KEY } from '../../../../../../shared/sidebar-list/sections/group-keys'
@@ -24,29 +22,15 @@ import { translateWorkspaceStatusHeaderLabel } from '../../workspace-status/pres
 import { getVirtualRowTransform } from '../viewport/virtual-rows'
 import { getSidebarHeaderVisual } from './header-visuals'
 import { resolveProjectGroupHeaderColor } from './project-header-color'
-import { ProjectHeaderActions } from './ProjectHeaderActions'
 import {
   getProjectGroupHeaderPaddingLeft,
   WORKTREE_SECTION_HEADER_PADDING_LEFT
 } from './indentation'
-import {
-  FolderPathStatusIndicator,
-  isFolderWorkspaceCreateDisabled
-} from './FolderPathStatusIndicator'
+import { FolderPathStatusIndicator } from './FolderPathStatusIndicator'
 import { RepoScanUnavailableIndicator } from './RepoScanUnavailableIndicator'
-import {
-  ProjectGroupCreateWorkspaceButton,
-  ProjectGroupHeaderMenu
-} from './project-group-header-actions'
-import {
-  RepoHeaderCreateWorkspaceButton,
-  RepoHeaderProjectActionsMenu
-} from './repo-header-project-actions'
-import {
-  handleRepoHeaderCollapseAffordancePointerDown,
-  shouldIgnoreRepoHeaderToggle,
-  toggleSectionHeaderCollapse
-} from './header-event-guards'
+import { ImportedWorktreesHeaderBadge } from './ImportedWorktreesHeaderBadge'
+import { SectionHeaderActions } from './SectionHeaderActions'
+import { shouldIgnoreRepoHeaderToggle, toggleSectionHeaderCollapse } from './header-event-guards'
 import { getWorktreeOptionId } from './option-dom'
 import type { SectionHeaderRowContext } from './section-header-row-context'
 import type { Translate } from '@/i18n/use-translate'
@@ -334,71 +318,32 @@ export function renderWorktreeSectionHeaderRow(
                 <RepoForkIndicator upstream={row.repo?.upstream} />
                 <FolderPathStatusIndicator status={projectGroupPathStatus} />
                 {isRepoHeader ? <RepoScanUnavailableIndicator repo={row.repo!} /> : null}
+                {row.importedWorktrees?.length ? (
+                  <ImportedWorktreesHeaderBadge
+                    notices={row.importedWorktrees}
+                    repoLabel={label}
+                    actionStateByProjectId={ctx.importedWorktreeCardActionState}
+                    onShow={ctx.onShowImportedWorktrees}
+                    onKeepHidden={ctx.onKeepImportedWorktreesHidden}
+                  />
+                ) : null}
               </div>
             </div>
           </div>
 
-          <ProjectHeaderActions>
-            {showHeaderCollapseAffordance ? (
-              <div
-                className="flex size-5 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent/70 hover:text-foreground"
-                data-repo-header-collapse-affordance=""
-                aria-hidden
-                onPointerDown={handleRepoHeaderCollapseAffordancePointerDown}
-                onClick={(event) => {
-                  event.preventDefault()
-                  event.stopPropagation()
-                  toggleHeader(event)
-                }}
-              >
-                <ChevronDown
-                  className={cn('size-3.5 transition-transform', isHeaderCollapsed && '-rotate-90')}
-                />
-              </div>
-            ) : null}
-
-            {isProjectGroupHeader && !row.repo && projectGroupIdForHeader ? (
-              <ProjectGroupHeaderMenu
-                groupId={projectGroupIdForHeader}
-                hostId={projectGroupHostIdForHeader}
-                label={label}
-                projectGroup={folderBackedProjectGroup}
-                onRefreshProjectGroup={ctx.onRefreshProjectGroup}
-                onRename={ctx.onRenameProjectGroup}
-                onDelete={ctx.onDeleteProjectGroup}
-              />
-            ) : null}
-
-            {folderBackedProjectGroup ? (
-              <ProjectGroupCreateWorkspaceButton
-                projectGroup={folderBackedProjectGroup}
-                label={label}
-                pathStatus={projectGroupPathStatus}
-                disabled={isFolderWorkspaceCreateDisabled(projectGroupPathStatus)}
-                onCreate={ctx.onCreateFolderWorkspace}
-              />
-            ) : null}
-
-            {row.repo && ctx.groupBy === 'repo' ? (
-              <RepoHeaderProjectActionsMenu
-                repo={row.repo}
-                hostRepos={row.hostRepos}
-                label={label}
-                projectGroups={ctx.projectGroups}
-                actions={ctx.projectActions}
-              />
-            ) : null}
-
-            {row.repo && ctx.groupBy === 'repo' ? (
-              <RepoHeaderCreateWorkspaceButton
-                key={`${row.repo.executionHostId ?? 'local'}:${row.repo.connectionId ?? ''}`}
-                repo={row.repo}
-                label={label}
-                pinHost={isSingleHostProjectHeader(row)}
-                onCreateForRepo={ctx.projectActions.onCreateForRepo}
-              />
-            ) : null}
-          </ProjectHeaderActions>
+          <SectionHeaderActions
+            ctx={ctx}
+            row={row}
+            label={label}
+            isHeaderCollapsed={isHeaderCollapsed}
+            showHeaderCollapseAffordance={showHeaderCollapseAffordance}
+            isProjectGroupHeader={isProjectGroupHeader}
+            projectGroupIdForHeader={projectGroupIdForHeader}
+            projectGroupHostIdForHeader={projectGroupHostIdForHeader}
+            folderBackedProjectGroup={folderBackedProjectGroup}
+            projectGroupPathStatus={projectGroupPathStatus}
+            toggleHeader={toggleHeader}
+          />
         </div>
       </ProjectHeaderHostTooltip>
     </div>

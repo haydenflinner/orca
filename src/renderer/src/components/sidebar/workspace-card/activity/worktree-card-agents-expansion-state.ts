@@ -9,6 +9,7 @@ export type WorktreeAgentExpansionState = {
   // Child lists start collapsed so spawning subagents cannot grow the card and shift the sidebar.
   expandedLineageParents: ReadonlySet<string>
   expandedIdleChildGroups: ReadonlySet<string>
+  /** Root agents start visible; collapsing the N-agents pill is the retained override. */
   compactRootListExpanded: boolean
 }
 
@@ -17,7 +18,7 @@ const EMPTY_PANE_KEYS: ReadonlySet<string> = new Set()
 const DEFAULT_EXPANSION_STATE: WorktreeAgentExpansionState = {
   expandedLineageParents: EMPTY_PANE_KEYS,
   expandedIdleChildGroups: EMPTY_PANE_KEYS,
-  compactRootListExpanded: false
+  compactRootListExpanded: true
 }
 
 // Retain disclosures across virtualizer/lineage remounts in a bounded renderer-session cache; reload resets them.
@@ -57,7 +58,7 @@ function persistExpansionState(
   // Refresh LRU order and retain only non-default disclosures.
   expansionByKey.delete(key)
   if (
-    state.compactRootListExpanded ||
+    !state.compactRootListExpanded ||
     state.expandedLineageParents.size > 0 ||
     state.expandedIdleChildGroups.size > 0
   ) {

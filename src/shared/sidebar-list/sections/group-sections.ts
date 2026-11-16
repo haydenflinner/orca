@@ -17,7 +17,6 @@ import type { RenderableFolderWorkspace } from '../folders/folder-workspace-lane
 import type { ProjectGroupingIndex } from './project-section-grouping'
 import {
   appendWorktreeRows,
-  buildImportedWorktreesCardRow,
   buildNewExternalWorktreesInboxRow,
   buildPendingCreationRow
 } from './row-builders'
@@ -105,6 +104,29 @@ export function appendOrderedGroups(
     const isCollapsed = collapsedGroups.has(key)
     const repo = group.repo
     const folderPairs = group.folderWorkspaces ?? []
+    const sectionRepoIds =
+      groupBy === 'repo'
+        ? group.repoIds.size > 0
+          ? [...group.repoIds]
+          : repo
+            ? [repo.id]
+            : key.startsWith('repo:')
+              ? [key.slice('repo:'.length)]
+              : []
+        : []
+    const importedWorktrees = sectionRepoIds.flatMap((repoId) => {
+      const candidate = importedWorktreesByRepo.get(repoId)
+      if (!candidate) {
+        return []
+      }
+      const notice = ctx.noticeHostContextLabelByRepoId?.get(repoId)
+      return [
+        {
+          ...candidate,
+          ...(notice ? { hostContextLabel: notice.label, hostContextHostId: notice.hostId } : {})
+        }
+      ]
+    })
     const header =
       groupBy === 'repo'
         ? {
@@ -115,6 +137,7 @@ export function appendOrderedGroups(
             icon: { kind: 'project' as const },
             repo,
             projectGroupDepth,
+            ...(importedWorktrees.length > 0 ? { importedWorktrees } : {}),
             ...getProjectHeaderHostScope(ctx, group)
           }
         : groupBy === 'workspace-status'
@@ -171,27 +194,7 @@ export function appendOrderedGroups(
     result.push(header)
     if (!isCollapsed) {
       if (groupBy === 'repo') {
-        const repoIds =
-          group.repoIds.size > 0
-            ? [...group.repoIds]
-            : repo
-              ? [repo.id]
-              : key.startsWith('repo:')
-                ? [key.slice('repo:'.length)]
-                : []
-        for (const repoId of repoIds) {
-          const candidate = importedWorktreesByRepo.get(repoId)
-          if (candidate) {
-            result.push(
-              buildImportedWorktreesCardRow(
-                candidate,
-                ctx.noticeHostContextLabelByRepoId?.get(repoId),
-                projectGroupDepth + 1
-              )
-            )
-          }
-        }
-        for (const repoId of repoIds) {
+        for (const repoId of sectionRepoIds) {
           const candidate = newExternalWorktreesInboxByRepo.get(repoId)
           if (candidate) {
             result.push(
@@ -204,7 +207,7 @@ export function appendOrderedGroups(
           }
         }
         // Place in-progress creates atop their own repo so the workspace appears where it will land.
-        for (const repoId of repoIds) {
+        for (const repoId of sectionRepoIds) {
           for (const creation of pendingByRepo.get(repoId) ?? []) {
             result.push(buildPendingCreationRow(creation, repoMap, projectGroupDepth + 1))
           }

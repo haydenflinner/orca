@@ -10,6 +10,7 @@ import type { WorktreeGroupBy } from '../../../../../../shared/sidebar-list/row-
 import type { WorktreeSidebarHeaderDrag } from '../drag/use-header-drag'
 import type { ProjectHeaderHostContext } from './project-header-host-context'
 import type { RepoHeaderProjectActions } from './repo-header-project-actions'
+import type { ImportedWorktreeCardActionState } from '../listing/imported-worktrees-card-actions'
 
 export type SectionHeaderRowContext = {
   groupBy: WorktreeGroupBy
@@ -28,6 +29,9 @@ export type SectionHeaderRowContext = {
   toggleGroupWithScrollAnchor: (groupKey: string) => void
   toggleAllProjects?: () => void
   projectActions: RepoHeaderProjectActions
+  importedWorktreeCardActionState: ReadonlyMap<string, ImportedWorktreeCardActionState>
+  onShowImportedWorktrees: (projectId: string) => void
+  onKeepImportedWorktreesHidden: (projectId: string) => void
   onRenameProjectGroup: (groupId: string, currentName: string, hostId?: ExecutionHostId) => void
   onDeleteProjectGroup: (groupId: string, groupName: string, hostId?: ExecutionHostId) => void
   onRefreshProjectGroup?: (projectGroup: ProjectGroup) => void

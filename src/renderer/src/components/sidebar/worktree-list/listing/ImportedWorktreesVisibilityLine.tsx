@@ -83,11 +83,7 @@ export default function ImportedWorktreesVisibilityLine({
 }: ImportedWorktreesVisibilityLineProps): React.JSX.Element | null {
   const t = useTranslate()
   const [isExpanded, setIsExpanded] = useState(false)
-  const [expandedGroupPathKeys, setExpandedGroupPathKeys] = useState<Set<string>>(new Set())
   const hiddenCount = hiddenWorktrees.length
-  const worktreeGroups = groupWorktreesByParentPath(hiddenWorktrees)
-  const visibleWorktreeGroups = worktreeGroups.slice(0, GROUP_LIMIT)
-  const remainingGroupCount = Math.max(0, worktreeGroups.length - visibleWorktreeGroups.length)
   // Host labels distinguish otherwise identical project notice rows.
   const repoScopeLabel =
     repoDisplayName && hostContextLabel
@@ -117,19 +113,6 @@ export default function ImportedWorktreesVisibilityLine({
         'Keep {{count}} discovered worktree hidden for {{repo}}; recover from the project menu'
     }
   )
-
-  const toggleGroupExpanded = (path: string): void => {
-    const key = normalizeRuntimePathForComparison(path)
-    setExpandedGroupPathKeys((previous) => {
-      const next = new Set(previous)
-      if (next.has(key)) {
-        next.delete(key)
-      } else {
-        next.add(key)
-      }
-      return next
-    })
-  }
 
   return (
     <section
@@ -212,124 +195,13 @@ export default function ImportedWorktreesVisibilityLine({
       </div>
 
       {isExpanded ? (
-        <div
-          className="ml-4 mt-0.5 grid gap-1 border-l border-worktree-sidebar-border pb-1 pl-2"
-          aria-label={t(
-            'auto.components.sidebar.ImportedWorktreesVisibilityLine.2251d41ebb',
-            'Hidden worktree groups'
-          )}
-        >
-          {visibleWorktreeGroups.map((group) => (
-            <div key={group.path} className="grid min-w-0 gap-0.5 rounded-md px-1.5 py-1">
-              <div className="flex min-h-7 min-w-0 items-center gap-1.5">
-                <span className="min-w-0 flex-1 break-all font-mono text-3xs leading-4 text-muted-foreground">
-                  {group.path}
-                </span>
-                <span className="shrink-0 rounded-full border border-worktree-sidebar-border px-1.5 py-0.5 text-[10px] leading-none text-muted-foreground">
-                  {group.worktrees.length}
-                </span>
-              </div>
-              <ul
-                className="list-disc space-y-0.5 py-0 pl-5 pr-2 text-xs text-muted-foreground marker:text-muted-foreground"
-                aria-label={t(
-                  'auto.components.sidebar.ImportedWorktreesVisibilityLine.b47ba1a9d2',
-                  '{{value0}} preview',
-                  { value0: group.path }
-                )}
-              >
-                {group.worktrees
-                  .slice(
-                    0,
-                    expandedGroupPathKeys.has(normalizeRuntimePathForComparison(group.path))
-                      ? group.worktrees.length
-                      : PREVIEW_LIMIT
-                  )
-                  .map((worktree, index) => (
-                    <li
-                      key={getWorktreeKey(worktree, index, 'preview')}
-                      className="min-h-6 min-w-0 py-0.5 pl-0"
-                    >
-                      <span className="block min-w-0 truncate font-medium">
-                        {worktree.displayName}
-                      </span>
-                    </li>
-                  ))}
-                {group.worktrees.length > PREVIEW_LIMIT ? (
-                  <li className="list-none">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="xs"
-                      disabled={pending}
-                      onClick={() => toggleGroupExpanded(group.path)}
-                      className="h-6 justify-start px-0 text-[11px] font-normal text-muted-foreground hover:text-worktree-sidebar-accent-foreground"
-                    >
-                      {expandedGroupPathKeys.has(normalizeRuntimePathForComparison(group.path))
-                        ? t(
-                            'auto.components.sidebar.ImportedWorktreesVisibilityLine.294de4aeb2',
-                            'Show fewer'
-                          )
-                        : t(
-                            'auto.components.sidebar.ImportedWorktreesVisibilityLine.5a9688802a',
-                            'Show {{value0}} more',
-                            { value0: group.worktrees.length - PREVIEW_LIMIT }
-                          )}
-                    </Button>
-                  </li>
-                ) : null}
-              </ul>
-            </div>
-          ))}
-          {remainingGroupCount > 0 ? (
-            <div className="py-1 pl-7 pr-2 text-[11px] leading-4 text-muted-foreground">
-              {t(
-                'auto.components.sidebar.ImportedWorktreesVisibilityLine.moreLocations',
-                '+ {{count}} more locations',
-                { count: remainingGroupCount, defaultValue_one: '+ {{count}} more location' }
-              )}
-            </div>
-          ) : null}
-          <div className="grid gap-1 px-1.5 pb-1 pt-1">
-            <p className="rounded-md bg-worktree-sidebar-accent px-2 py-1 text-[10px] font-medium leading-4 text-worktree-sidebar-accent-foreground">
-              {t(
-                'auto.components.sidebar.ImportedWorktreesVisibilityLine.9f4f14e821',
-                'Change this later from the project menu.'
-              )}
-            </p>
-            <div className="flex min-w-0 items-center gap-1.5">
-              {onKeepHidden ? (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="xs"
-                  disabled={pending}
-                  onClick={onKeepHidden}
-                  className="h-6 px-2 text-[11px] font-medium"
-                >
-                  {t(
-                    'auto.components.sidebar.ImportedWorktreesVisibilityLine.ad99f4eea9',
-                    'Keep hidden'
-                  )}
-                </Button>
-              ) : null}
-              {onShow ? (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="xs"
-                  disabled={pending}
-                  onClick={onShow}
-                  className="h-6 px-2 text-[11px] font-medium"
-                >
-                  {t(
-                    'auto.components.sidebar.ImportedWorktreesVisibilityLine.b7a87dc32f',
-                    'Show in worktree list'
-                  )}
-                </Button>
-              ) : null}
-            </div>
-          </div>
-        </div>
+        <ImportedWorktreesVisibilityDetails
+          hiddenWorktrees={hiddenWorktrees}
+          pending={pending}
+          onShow={onShow}
+          onKeepHidden={onKeepHidden}
+          className="ml-4 mt-0.5 border-l border-worktree-sidebar-border pb-1 pl-2"
+        />
       ) : null}
 
       {error ? (
@@ -338,6 +210,160 @@ export default function ImportedWorktreesVisibilityLine({
         </p>
       ) : null}
     </section>
+  )
+}
+
+export type ImportedWorktreesVisibilityDetailsProps = {
+  hiddenWorktrees: readonly ImportedWorktreeVisibilityPreview[]
+  pending: boolean
+  onShow?: () => void
+  onKeepHidden?: () => void
+  className?: string
+}
+
+export function ImportedWorktreesVisibilityDetails({
+  hiddenWorktrees,
+  pending,
+  onShow,
+  onKeepHidden,
+  className
+}: ImportedWorktreesVisibilityDetailsProps): React.JSX.Element {
+  const t = useTranslate()
+  const [expandedGroupPathKeys, setExpandedGroupPathKeys] = useState<Set<string>>(new Set())
+  const worktreeGroups = groupWorktreesByParentPath(hiddenWorktrees)
+  const visibleWorktreeGroups = worktreeGroups.slice(0, GROUP_LIMIT)
+  const remainingGroupCount = Math.max(0, worktreeGroups.length - visibleWorktreeGroups.length)
+
+  const toggleGroupExpanded = (path: string): void => {
+    const key = normalizeRuntimePathForComparison(path)
+    setExpandedGroupPathKeys((previous) => {
+      const next = new Set(previous)
+      if (next.has(key)) {
+        next.delete(key)
+      } else {
+        next.add(key)
+      }
+      return next
+    })
+  }
+
+  return (
+    <div
+      className={cn('grid gap-1', className)}
+      aria-label={t(
+        'auto.components.sidebar.ImportedWorktreesVisibilityLine.2251d41ebb',
+        'Hidden worktree groups'
+      )}
+    >
+      {visibleWorktreeGroups.map((group) => (
+        <div key={group.path} className="grid min-w-0 gap-0.5 rounded-md px-1.5 py-1">
+          <div className="flex min-h-7 min-w-0 items-center gap-1.5">
+            <span className="min-w-0 flex-1 break-all font-mono text-3xs leading-4 text-muted-foreground">
+              {group.path}
+            </span>
+            <span className="shrink-0 rounded-full border border-worktree-sidebar-border px-1.5 py-0.5 text-[10px] leading-none text-muted-foreground">
+              {group.worktrees.length}
+            </span>
+          </div>
+          <ul
+            className="list-disc space-y-0.5 py-0 pl-5 pr-2 text-xs text-muted-foreground marker:text-muted-foreground"
+            aria-label={t(
+              'auto.components.sidebar.ImportedWorktreesVisibilityLine.b47ba1a9d2',
+              '{{value0}} preview',
+              { value0: group.path }
+            )}
+          >
+            {group.worktrees
+              .slice(
+                0,
+                expandedGroupPathKeys.has(normalizeRuntimePathForComparison(group.path))
+                  ? group.worktrees.length
+                  : PREVIEW_LIMIT
+              )
+              .map((worktree, index) => (
+                <li
+                  key={getWorktreeKey(worktree, index, 'preview')}
+                  className="min-h-6 min-w-0 py-0.5 pl-0"
+                >
+                  <span className="block min-w-0 truncate font-medium">{worktree.displayName}</span>
+                </li>
+              ))}
+            {group.worktrees.length > PREVIEW_LIMIT ? (
+              <li className="list-none">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="xs"
+                  disabled={pending}
+                  onClick={() => toggleGroupExpanded(group.path)}
+                  className="h-6 justify-start px-0 text-[11px] font-normal text-muted-foreground hover:text-worktree-sidebar-accent-foreground"
+                >
+                  {expandedGroupPathKeys.has(normalizeRuntimePathForComparison(group.path))
+                    ? t(
+                        'auto.components.sidebar.ImportedWorktreesVisibilityLine.294de4aeb2',
+                        'Show fewer'
+                      )
+                    : t(
+                        'auto.components.sidebar.ImportedWorktreesVisibilityLine.5a9688802a',
+                        'Show {{value0}} more',
+                        { value0: group.worktrees.length - PREVIEW_LIMIT }
+                      )}
+                </Button>
+              </li>
+            ) : null}
+          </ul>
+        </div>
+      ))}
+      {remainingGroupCount > 0 ? (
+        <div className="py-1 pl-7 pr-2 text-[11px] leading-4 text-muted-foreground">
+          {t(
+            'auto.components.sidebar.ImportedWorktreesVisibilityLine.moreLocations',
+            '+ {{count}} more locations',
+            { count: remainingGroupCount, defaultValue_one: '+ {{count}} more location' }
+          )}
+        </div>
+      ) : null}
+      <div className="grid gap-1 px-1.5 pb-1 pt-1">
+        <p className="rounded-md bg-worktree-sidebar-accent px-2 py-1 text-[10px] font-medium leading-4 text-worktree-sidebar-accent-foreground">
+          {t(
+            'auto.components.sidebar.ImportedWorktreesVisibilityLine.9f4f14e821',
+            'Change this later from the project menu.'
+          )}
+        </p>
+        <div className="flex min-w-0 items-center gap-1.5">
+          {onKeepHidden ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="xs"
+              disabled={pending}
+              onClick={onKeepHidden}
+              className="h-6 px-2 text-[11px] font-medium"
+            >
+              {t(
+                'auto.components.sidebar.ImportedWorktreesVisibilityLine.ad99f4eea9',
+                'Keep hidden'
+              )}
+            </Button>
+          ) : null}
+          {onShow ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="xs"
+              disabled={pending}
+              onClick={onShow}
+              className="h-6 px-2 text-[11px] font-medium"
+            >
+              {t(
+                'auto.components.sidebar.ImportedWorktreesVisibilityLine.b7a87dc32f',
+                'Show in worktree list'
+              )}
+            </Button>
+          ) : null}
+        </div>
+      </div>
+    </div>
   )
 }
 

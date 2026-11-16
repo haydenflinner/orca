@@ -43,6 +43,8 @@ export type GroupHeaderRow = {
   hostId?: ExecutionHostId
   /** A project checked out on several hosts: each host's own registration, one header per host section. */
   hostRepos?: ReadonlyMap<ExecutionHostId, Repo>
+  /** Hidden detected worktrees behind the header's info badge; only set on repo-grouped headers. */
+  importedWorktrees?: readonly ImportedWorktreesHeaderNotice[]
   /** On a host copy: the project's anchor registration, which project order keys on; `repo` is this host's. */
   anchorRepo?: Repo
   /** An earlier host section already drew this header; order and drag key on that first copy. */
@@ -77,27 +79,23 @@ export type ImportedWorktreesCardCandidate = {
   hiddenWorktrees: DetectedWorktree[]
 }
 
+export type ImportedWorktreesHeaderNotice = ImportedWorktreesCardCandidate & {
+  hostContextLabel?: string
+  hostContextHostId?: ExecutionHostId
+}
+
+// Repo-grouped headers carry the notice on `importedWorktrees`; outside project grouping no header
+// owns a project, so one line covers a host's projects.
 export type ImportedWorktreesCardRow = {
   type: 'imported-worktrees-card'
   key: string
+  placement: 'all-projects'
+  hostId: ExecutionHostId
+  projects: ImportedWorktreesCardCandidate[]
   /** Set only when the row's project, or this line's host, needs naming among several hosts. */
   hostContextLabel?: string
   hostContextHostId?: ExecutionHostId
-} & (
-  | {
-      placement: 'repo-group'
-      repo: Repo
-      hiddenWorktrees: DetectedWorktree[]
-      /** The section rows' depth; the line insets to match its siblings. */
-      groupDepth: number
-    }
-  // Outside project grouping no header owns a project, so one line covers a host's projects.
-  | {
-      placement: 'all-projects'
-      hostId: ExecutionHostId
-      projects: ImportedWorktreesCardCandidate[]
-    }
-)
+}
 
 export type NewExternalWorktreesInboxCandidate = {
   repo: Repo
