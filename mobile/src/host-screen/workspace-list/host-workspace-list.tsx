@@ -47,7 +47,10 @@ import { HostPendingCreationRow } from './host-pending-creation-row'
 import { useSlowPendingKeys } from './use-slow-pending-keys'
 import { useHostMutationDrafts } from '../../query/host-mutation-drafts'
 import { workspaceRenameDraftKey } from '../workspace-actions/workspace-rename-sheet'
-import { projectGroupHeaderIndent } from '../../worktree/project-sections/project-group-indent'
+import {
+  projectGroupHeaderIndent,
+  projectGroupRowIndent
+} from '../../worktree/project-sections/project-group-indent'
 import type { HostScreenController } from '../use-host-screen-controller'
 
 export function HostWorkspaceList({
@@ -353,8 +356,15 @@ const HostSectionHeader = memo(function HostSectionHeader(props: {
   onToggle: (collapseKey: string) => void
 }) {
   useMobileColorScheme()
+  // Pending creations render as child rows: one level under the group's own depth.
+  const rowIndent = props.isProjectGroup
+    ? projectGroupRowIndent(
+        { workspaceKind: 'git' },
+        { projectGroupDepth: (props.projectGroupDepth ?? 0) + 1 }
+      )
+    : 0
   const pendingCreations = props.pendingCreations?.map((creation) => (
-    <HostPendingCreationRow key={creation.key} creation={creation} />
+    <HostPendingCreationRow key={creation.key} creation={creation} indent={rowIndent} />
   ))
   if (!props.title) {
     return pendingCreations ? <>{pendingCreations}</> : null

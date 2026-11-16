@@ -1,7 +1,6 @@
 import type { Worktree, WorktreeRowView } from '../workspace-list/workspace-list-types'
 
-// Match desktop indentation.ts steps and its six-level cap.
-const PROJECT_GROUP_HEADER_INDENT = 10
+// One step per level: mobile headers are plain rows, so they need the full indent desktop's labeled sections don't.
 const TREE_INDENT = 18
 const MAX_PROJECT_GROUP_DEPTH = 6
 
@@ -10,19 +9,18 @@ function cappedDepth(depth: number | undefined): number {
 }
 
 export function projectGroupHeaderIndent(depth: number | undefined): number {
-  return cappedDepth(depth) * PROJECT_GROUP_HEADER_INDENT
+  return cappedDepth(depth) * TREE_INDENT
 }
 
-// Match desktop row indentation; folder-scan groups use the header step and folder workspaces sit one level shallower.
+// Rows take one extra step so a child's text lands right of the group's title; folder workspaces align to the label as the group's own row.
 export function projectGroupRowIndent(
   row: Pick<Worktree, 'workspaceKind'>,
   view: Pick<WorktreeRowView, 'projectGroupDepth' | 'inFolderScanGroup'>
 ): number {
-  const depth = view.projectGroupDepth ?? 0
-  if (!view.inFolderScanGroup) {
-    return cappedDepth(depth) * TREE_INDENT
+  const depth = cappedDepth(view.projectGroupDepth)
+  if (depth === 0) {
+    return 0
   }
-  return row.workspaceKind === 'folder-workspace'
-    ? cappedDepth(depth - 1) * PROJECT_GROUP_HEADER_INDENT
-    : cappedDepth(depth) * PROJECT_GROUP_HEADER_INDENT
+  const isFolderWorkspace = view.inFolderScanGroup && row.workspaceKind === 'folder-workspace'
+  return (depth + (isFolderWorkspace ? 0 : 1)) * TREE_INDENT
 }

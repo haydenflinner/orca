@@ -5,11 +5,20 @@ import { useMobileColorScheme } from '../../theme/use-mobile-color-scheme'
 import type { SectionPendingCreation } from '../../worktree/workspace-list/workspace-list-types'
 import { useMobileTranslation } from '../../i18n/use-mobile-translation'
 
-export function HostPendingCreationRow({ creation }: { creation: SectionPendingCreation }) {
+export function HostPendingCreationRow({
+  creation,
+  indent = 0
+}: {
+  creation: SectionPendingCreation
+  indent?: number
+}) {
   const t = useMobileTranslation()
   useMobileColorScheme()
   return (
-    <View style={styles.row} accessibilityRole="progressbar">
+    <View
+      style={[styles.row, indent > 0 && { paddingLeft: spacing.lg + indent }]}
+      accessibilityRole="progressbar"
+    >
       <View style={styles.indicator}>
         <ActivityIndicator size="small" color={colors.textMuted} />
       </View>
