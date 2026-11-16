@@ -22,6 +22,7 @@ import {
   resolveVisibleTaskProvider
 } from '../../../../../shared/work-items/task-providers'
 import { localPreflightContextKey } from '../../../runtime/hosts/preflight/local-preflight-context-key'
+import { SidebarNavHideButton } from './sidebar-nav-controls'
 
 function HideTaskSidebarMenu({ onHide }: { onHide: () => void }): React.JSX.Element {
   const t = useTranslate()
@@ -169,7 +170,7 @@ export function SidebarTaskNavButton(): React.JSX.Element | null {
             aria-current={tasksActive ? 'page' : undefined}
             data-contextual-tour-target="sidebar-tasks"
             className={cn(
-              'flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] font-medium tracking-tight transition-colors',
+              'flex w-full items-center gap-2 rounded-md px-2 py-1 text-left text-[13px] font-medium tracking-tight transition-colors',
               tasksActive
                 ? 'bg-worktree-sidebar-accent text-worktree-sidebar-accent-foreground'
                 : 'text-worktree-sidebar-foreground/60 group-hover:bg-worktree-sidebar-foreground/8'
@@ -187,6 +188,7 @@ export function SidebarTaskNavButton(): React.JSX.Element | null {
             </span>
           </button>
           <span className="absolute right-2 top-1/2 flex -translate-y-1/2 items-center gap-1 can-hover:pointer-events-none can-hover:opacity-0 can-hover:group-hover:pointer-events-auto can-hover:group-hover:opacity-100 can-hover:group-focus-within:pointer-events-auto can-hover:group-focus-within:opacity-100">
+            <SidebarNavHideButton onHide={hideTasksButton} />
             {visibleTaskProviders.includes('github') ? (
               <TaskProviderShortcut
                 label={t('auto.components.sidebar.SidebarNav.0ccba862b8', 'Open GitHub tasks')}

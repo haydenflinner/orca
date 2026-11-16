@@ -246,6 +246,8 @@ export type GlobalSettings = GlobalSettingsBase & {
   showTitlebarAppName: boolean
   /** Hides the Tasks sidebar button (also removes it from keyboard navigation). */
   showTasksButton: boolean
+  /** Only toggles the sidebar shortcut; Search stays reachable via the worktree palette shortcut. */
+  showSearchButton?: boolean
   /** Only toggles the sidebar shortcut; Automations stay reachable from Settings/View menu. */
   showAutomationsButton?: boolean
   /** Deprecated: Artifacts are always available. Use showArtifactsButton for sidebar visibility. */

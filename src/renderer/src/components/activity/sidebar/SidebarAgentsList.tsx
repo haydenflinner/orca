@@ -10,6 +10,7 @@ import { hasActivityThreadWorkspace } from '@/components/activity/thread-list/ac
 import { useActivityThreadActionBindings } from '@/components/activity/thread-list/use-activity-thread-action-bindings'
 import { ActivityThreadListPane } from '@/components/activity/thread-list/activity-thread-list-pane'
 import { subscribeAgentsListIndexJump } from '@/components/activity/agents-list-index-jump'
+import { AGENTS_TWO_COLUMN_MIN_WIDTH } from '@/components/activity/activity-thread-virtual-items'
 import { ActivityIndexHintsContext } from '@/components/activity/activity-index-hints-context'
 import { useShortcutKeyComboDetails } from '@/hooks/useShortcutLabel'
 import { useModifierHeldClass } from '../editor/rich-markdown/viewport/useModifierHeldClass'
@@ -120,6 +121,10 @@ function SidebarAgentsListBody({
   useTranslation()
   const compactMode = useAppStore((s) => s.agentsCompactMode)
   const setCompactMode = useAppStore((s) => s.setAgentsCompactMode)
+  const twoColumn = useAppStore((s) => s.agentsTwoColumn)
+  const setTwoColumn = useAppStore((s) => s.setAgentsTwoColumn)
+  const sidebarWidth = useAppStore((s) => s.sidebarWidth)
+  const columns = twoColumn && sidebarWidth >= AGENTS_TWO_COLUMN_MIN_WIDTH ? 2 : 1
   const showSearch = useAppStore((s) => s.agentsShowSearch)
   const setShowSearch = useAppStore((s) => s.setAgentsShowSearch)
   const showChildAgents = useAppStore((s) => s.agentsShowChildAgents)
@@ -307,6 +312,7 @@ function SidebarAgentsListBody({
           onMarkAllThreadsRead={markAllThreadsRead}
           hasCompletedThreads={hasCompletedThreads}
           onClearCompleted={handleClearCompleted}
+          columns={columns}
           visibleThreadGroups={visibleThreadGroups}
           visibleThreadCount={visibleThreads.length}
           selectedPaneKey={effectiveSelectedPaneKey}
@@ -332,6 +338,8 @@ function SidebarAgentsListBody({
               groupBy={groupBy}
               onGroupByChange={setGroupBy}
               compactMode={compactMode}
+              twoColumn={twoColumn}
+              onTwoColumnChange={setTwoColumn}
               showChildAgents={showChildAgents}
               hasUnreadThreads={hasUnreadThreads}
               hasCompletedThreads={hasCompletedThreads}

@@ -89,6 +89,8 @@ export type UISlicePreferences = {
   setAgentsShowChildAgents: (v: boolean) => void
   agentsCompactMode: boolean
   setAgentsCompactMode: (v: boolean) => void
+  agentsTwoColumn: boolean
+  setAgentsTwoColumn: (v: boolean) => void
   agentsShowSearch: boolean
   setAgentsShowSearch: (v: boolean) => void
   agentsReadFilter: ThreadReadFilter

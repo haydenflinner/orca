@@ -24,7 +24,10 @@ export function useActivityThreadSelection({
 } {
   // Collapsed groups contribute no thread items, so their rows drop out of the selection.
   const renderedThreads = useMemo(
-    () => virtualItems.flatMap((item) => (item.type === 'thread' ? [item.thread] : [])),
+    () =>
+      virtualItems.flatMap((item) =>
+        item.type === 'thread' ? [item.thread] : item.type === 'thread-pair' ? item.threads : []
+      ),
     [virtualItems]
   )
   const getScope = useCallback(() => scrollContainerRef.current, [scrollContainerRef])

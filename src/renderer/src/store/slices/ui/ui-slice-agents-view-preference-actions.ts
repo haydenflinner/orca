@@ -44,6 +44,11 @@ export function createAgentsViewPreferenceActions(set: UISliceSet): Partial<UISl
       set({ agentsCompactMode: v })
       window.api.ui.set({ agentsCompactMode: v }).catch(console.error)
     },
+    agentsTwoColumn: true,
+    setAgentsTwoColumn: (v) => {
+      set({ agentsTwoColumn: v })
+      window.api.ui.set({ agentsTwoColumn: v }).catch(console.error)
+    },
     agentsShowSearch: true,
     setAgentsShowSearch: (v) => {
       set({ agentsShowSearch: v })

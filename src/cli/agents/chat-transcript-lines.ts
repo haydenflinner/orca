@@ -66,7 +66,7 @@ export function journalItemCliLines(item: AgentJournalRenderItem): string[] {
       return [`${owner}diff ${body.path}${cut}`]
     }
     case 'status': {
-      const failure = 'failure' in body && body.failure ? ` ${body.failure}` : ''
+      const failure = 'failure' in body && body.failure ? ` ${String(body.failure)}` : ''
       return [`${owner}status${failure}: ${clip(body.text)}`]
     }
     case 'turn': {

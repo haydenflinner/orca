@@ -183,6 +183,23 @@ export const getSidebarEntries = createLocalizedCatalog((): SettingsSearchEntry[
       ...translateSearchKeyword('auto.components.settings.appearance.search.839fb1e3ed', 'toolbox')
     ]
   },
+  {
+    title: translate(
+      'auto.components.settings.appearance.search.showSearchButton.title',
+      'Show search button'
+    ),
+    description: translate(
+      'auto.components.settings.appearance.search.showSearchButton.description',
+      'Show the Search button at the top of the left sidebar. The worktree palette shortcut still works when hidden.'
+    ),
+    keywords: [
+      ...translateSearchKeyword('auto.components.settings.appearance.search.search', 'search'),
+      ...translateSearchKeyword('auto.components.settings.appearance.search.5bff6a2ef0', 'sidebar'),
+      ...translateSearchKeyword('auto.components.settings.appearance.search.6cf5f54ce1', 'button'),
+      ...translateSearchKeyword('auto.components.settings.appearance.search.648eeada79', 'hide'),
+      ...translateSearchKeyword('auto.components.settings.appearance.search.ac79fe4a04', 'show')
+    ]
+  },
   getWorkspaceCardLayoutEntry(),
   getLeftSidebarAppearanceEntry(),
   getShowPinnedWorktreesInGroupsEntry()

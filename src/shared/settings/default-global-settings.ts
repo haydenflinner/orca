@@ -181,6 +181,7 @@ export function buildDefaultSettings(args: {
     prAutoRefresh: 'default',
     showTitlebarAppName: true,
     showTasksButton: true,
+    showSearchButton: true,
     showAutomationsButton: true,
     artifactsEnabled: true,
     // New profiles only; stored profiles without the key load as false (normalizeLoadedGlobalSettings).

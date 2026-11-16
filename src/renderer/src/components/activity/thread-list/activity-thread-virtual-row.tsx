@@ -68,44 +68,56 @@ export function ActivityThreadVirtualRow({
       </div>
     )
   }
-  const canJump = canJumpToWorkspace(item.thread)
-  const isOpen = item.thread.paneKey === selectedPaneKey
+  const threads = item.type === 'thread' ? [item.thread] : item.threads
+  const renderThreadCell = (thread: AgentPaneThread, key: string): React.JSX.Element => {
+    const canJump = canJumpToWorkspace(thread)
+    const isOpen = thread.paneKey === selectedPaneKey
+    return (
+      <ActivityThreadContextMenu
+        key={key}
+        thread={thread}
+        canJump={canJump}
+        canMarkUnread={canMarkThreadUnread}
+        getTargets={getContextMenuTargets}
+        onOpen={onOpenThread}
+        onJump={onJumpToWorkspace}
+        onMarkRead={onMarkThreadRead}
+        onMarkUnread={onMarkThreadUnread}
+        onMarkManyRead={onMarkThreadsRead}
+        onMarkManyUnread={onMarkThreadsUnread}
+      >
+        {(menuOpen) => (
+          // Wrap the row: stacking two Radix triggers on its hover target would compose their refs.
+          <div className={threads.length === 1 ? 'col-span-2' : undefined}>
+            <ActivityThreadRow
+              thread={thread}
+              selected={isOpen}
+              multiSelected={!isOpen && multiSelectedKeys.has(thread.paneKey)}
+              onSelect={onSelectThread}
+              onOpen={onOpenThread}
+              onJump={onJumpToWorkspace}
+              onMarkRead={onMarkThreadRead}
+              onMarkUnread={onMarkThreadUnread}
+              onClear={isClearableActivityThread(thread) ? clearActivityThread : undefined}
+              canJump={canJump}
+              compactMode={compactMode}
+              disableMarkUnread={!canMarkThreadUnread(thread)}
+              showJumpAction={showJumpAction}
+              previewSuppressed={menuOpen}
+              shortcutIndex={indexHints?.indexByPaneKey.get(thread.paneKey)}
+              shortcutModifierKeys={indexHints?.modifierKeys}
+            />
+          </div>
+        )}
+      </ActivityThreadContextMenu>
+    )
+  }
+  if (item.type === 'thread') {
+    return <div className="pb-0.5">{renderThreadCell(item.thread, item.thread.paneKey)}</div>
+  }
   return (
-    <ActivityThreadContextMenu
-      thread={item.thread}
-      canJump={canJump}
-      canMarkUnread={canMarkThreadUnread}
-      getTargets={getContextMenuTargets}
-      onOpen={onOpenThread}
-      onJump={onJumpToWorkspace}
-      onMarkRead={onMarkThreadRead}
-      onMarkUnread={onMarkThreadUnread}
-      onMarkManyRead={onMarkThreadsRead}
-      onMarkManyUnread={onMarkThreadsUnread}
-    >
-      {(menuOpen) => (
-        // Wrap the row: stacking two Radix triggers on its hover target would compose their refs.
-        <div className="pb-0.5">
-          <ActivityThreadRow
-            thread={item.thread}
-            selected={isOpen}
-            multiSelected={!isOpen && multiSelectedKeys.has(item.thread.paneKey)}
-            onSelect={onSelectThread}
-            onOpen={onOpenThread}
-            onJump={onJumpToWorkspace}
-            onMarkRead={onMarkThreadRead}
-            onMarkUnread={onMarkThreadUnread}
-            onClear={isClearableActivityThread(item.thread) ? clearActivityThread : undefined}
-            canJump={canJump}
-            compactMode={compactMode}
-            disableMarkUnread={!canMarkThreadUnread(item.thread)}
-            showJumpAction={showJumpAction}
-            previewSuppressed={menuOpen}
-            shortcutIndex={indexHints?.indexByPaneKey.get(item.thread.paneKey)}
-            shortcutModifierKeys={indexHints?.modifierKeys}
-          />
-        </div>
-      )}
-    </ActivityThreadContextMenu>
+    <div className="grid grid-cols-2 gap-x-1 pb-0.5">
+      {item.threads.map((thread, index) => renderThreadCell(thread, `${thread.paneKey}:${index}`))}
+    </div>
   )
 }

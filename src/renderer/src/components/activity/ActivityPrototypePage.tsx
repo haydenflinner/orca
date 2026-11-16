@@ -14,6 +14,7 @@ import { handleActivityFilterFocusShortcut } from './thread-list/activity-filter
 import { hasActivityThreadWorkspace } from './thread-list/activity-thread-actions'
 import { useActivityThreadActionBindings } from './thread-list/use-activity-thread-action-bindings'
 import { ActivityThreadListPane } from './thread-list/activity-thread-list-pane'
+import { AGENTS_TWO_COLUMN_MIN_WIDTH } from './thread-list/activity-thread-virtual-items'
 import { ActivityThreadDetailPane } from './terminal-portal/activity-thread-detail-pane'
 import {
   otherActivityTerminalSlot,
@@ -40,6 +41,7 @@ export default function ActivityPrototypePage(): React.JSX.Element {
   const setGroupBy = useAppStore((s) => s.setAgentsGroupBy)
   const compactMode = useAppStore((s) => s.agentsCompactMode)
   const setCompactMode = useAppStore((s) => s.setAgentsCompactMode)
+  const twoColumn = useAppStore((s) => s.agentsTwoColumn)
   const showChildAgents = useAppStore((s) => s.agentsShowChildAgents)
   const setShowChildAgents = useAppStore((s) => s.setAgentsShowChildAgents)
   const [selectedPaneKey, setSelectedPaneKey] = useState<string | null>(null)
@@ -336,6 +338,7 @@ export default function ActivityPrototypePage(): React.JSX.Element {
           onMarkAllThreadsRead={markAllThreadsRead}
           hasCompletedThreads={hasCompletedThreads}
           onClearCompleted={handleClearCompleted}
+          columns={twoColumn && threadListWidth >= AGENTS_TWO_COLUMN_MIN_WIDTH ? 2 : 1}
           visibleThreadGroups={visibleThreadGroups}
           visibleThreadCount={visibleThreads.length}
           selectedPaneKey={selectedThread?.paneKey ?? null}

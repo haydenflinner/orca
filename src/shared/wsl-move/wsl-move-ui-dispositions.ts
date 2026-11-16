@@ -110,6 +110,7 @@ export const UI_STATE_GLOBAL_FIELDS = [
   'agentsHideCliCreatedWorkspaces',
   'agentsShowChildAgents',
   'agentsCompactMode',
+  'agentsTwoColumn',
   'agentsShowSearch',
   'agentsReadFilter',
   'agentsGroupBy',

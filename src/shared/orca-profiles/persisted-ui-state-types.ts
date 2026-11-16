@@ -108,6 +108,8 @@ export type PersistedUIState = {
   agentsShowChildAgents?: boolean
   /** Agents-view compact thread rows. Absent means on. */
   agentsCompactMode?: boolean
+  /** Agents sidebar: pair thread rows into two columns when the sidebar is wide enough. Absent means on. */
+  agentsTwoColumn?: boolean
   /** Agents sidebar search field visibility. Absent means on. */
   agentsShowSearch?: boolean
   /** Agents-view unread-only thread filter. Absent means 'all'. */

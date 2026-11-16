@@ -75,7 +75,7 @@ import { hydrateWslMovedSection } from './ui-slice-wsl-moved-section-actions'
 import { hydrateBrowserPaneLayout } from './browser-pane-layout-hydration'
 import { hydrateStatusBarItems } from './ui-slice-hydration-status-bar-items'
 
-const MAX_LEFT_SIDEBAR_WIDTH = 500
+const MAX_LEFT_SIDEBAR_WIDTH = 640
 const MAX_RIGHT_SIDEBAR_WIDTH = 4000
 /** Builds hydration actions that reconcile authoritative UI state without discarding pending local edits. */
 export function createUiHydrationActions(set: UISliceSet, _get: UISliceGet): Partial<UISlice> {
@@ -177,6 +177,7 @@ export function createUiHydrationActions(set: UISliceSet, _get: UISliceGet): Par
           agentsHideCliCreatedWorkspaces: ui.agentsHideCliCreatedWorkspaces === true,
           agentsShowChildAgents: ui.agentsShowChildAgents === true,
           agentsCompactMode: ui.agentsCompactMode !== false,
+          agentsTwoColumn: ui.agentsTwoColumn !== false,
           agentsShowSearch: ui.agentsShowSearch !== false,
           agentsReadFilter: normalizeThreadReadFilter(ui.agentsReadFilter),
           agentsGroupBy: normalizeActivityGroupBy(ui.agentsGroupBy),

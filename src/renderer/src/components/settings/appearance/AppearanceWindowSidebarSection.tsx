@@ -275,6 +275,26 @@ export function AppearanceWindowSidebarSection({
 
               <SearchableSetting
                 title={t(
+                  'auto.components.settings.AppearancePane.showSearchButton',
+                  'Show search button'
+                )}
+                description={sidebarEntries[3]?.description}
+                keywords={sidebarEntries[3]?.keywords ?? ['search', 'sidebar', 'button']}
+              >
+                <SettingsSwitchRow
+                  label={t(
+                    'auto.components.settings.AppearancePane.showSearchButton',
+                    'Show search button'
+                  )}
+                  checked={settings.showSearchButton !== false}
+                  onChange={() =>
+                    updateSettings({ showSearchButton: !(settings.showSearchButton !== false) })
+                  }
+                />
+              </SearchableSetting>
+
+              <SearchableSetting
+                title={t(
                   'auto.components.settings.AppearancePane.7be0027489',
                   'Show automations button'
                 )}

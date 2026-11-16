@@ -52,6 +52,8 @@ export function ActivityThreadOptionsMenu({
   groupBy,
   onGroupByChange,
   compactMode,
+  twoColumn = false,
+  onTwoColumnChange,
   showChildAgents = false,
   hasUnreadThreads,
   hasCompletedThreads = false,
@@ -67,6 +69,8 @@ export function ActivityThreadOptionsMenu({
   groupBy?: ActivityGroupBy
   onGroupByChange?: (groupBy: ActivityGroupBy) => void
   compactMode: boolean
+  twoColumn?: boolean
+  onTwoColumnChange?: (twoColumn: boolean) => void
   showChildAgents?: boolean
   hasUnreadThreads: boolean
   hasCompletedThreads?: boolean
@@ -206,6 +210,15 @@ export function ActivityThreadOptionsMenu({
         >
           {t('auto.components.activity.ActivityPrototypePage.f70e4bec47', 'Compact mode')}
         </DropdownMenuCheckboxItem>
+        {onTwoColumnChange ? (
+          <DropdownMenuCheckboxItem
+            checked={twoColumn}
+            onCheckedChange={(checked) => onTwoColumnChange(checked === true)}
+            onSelect={(event) => event.preventDefault()}
+          >
+            {t('auto.components.activity.ActivityPrototypePage.twoColumnLayout', 'Two columns')}
+          </DropdownMenuCheckboxItem>
+        ) : null}
         {onShowSearchChange ? (
           <DropdownMenuCheckboxItem
             checked={showSearch}

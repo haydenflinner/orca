@@ -18,13 +18,16 @@ function handleActivityThreadArrowKey(
   if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') {
     return
   }
-  const focusedKey = (event.target as HTMLElement)
-    .closest?.('[data-pane-key]')
-    ?.getAttribute('data-pane-key')
+  const focusedKey =
+    event.target instanceof HTMLElement
+      ? event.target.closest('[data-pane-key]')?.getAttribute('data-pane-key')
+      : null
   if (!focusedKey) {
     return
   }
-  const threads = virtualItems.flatMap((item) => (item.type === 'thread' ? [item.thread] : []))
+  const threads = virtualItems.flatMap((item) =>
+    item.type === 'thread' ? [item.thread] : item.type === 'thread-pair' ? item.threads : []
+  )
   const index = threads.findIndex((thread) => thread.paneKey === focusedKey)
   const next = threads[event.key === 'ArrowDown' ? index + 1 : index - 1]
   if (!next) {

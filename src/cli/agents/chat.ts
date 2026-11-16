@@ -12,7 +12,6 @@ import { structuredSessionIdFromNotificationPane } from '../../shared/agent-sess
 import {
   AGENT_SESSION_HISTORY_DIRECTIONS,
   AGENT_SESSION_HISTORY_MAX_LIMIT,
-  type AgentSessionHistoryDirection,
   type AgentSessionHistoryResult
 } from '../../shared/agent-session/agent-session-wire'
 import type { RuntimeWorktreePsResult } from '../../shared/worktree/catalog/runtime-worktree-contracts'
@@ -93,13 +92,15 @@ export const CHAT_HANDLERS: Record<string, CommandHandler> = {
   'chat read': async ({ flags, client, json }) => {
     const sessionId = resolveSessionId(getPresentStringFlag(flags, 'session'), client.isRemote)
     const directionArg = getOptionalStringFlag(flags, 'direction') ?? 'tail'
-    if (!AGENT_SESSION_HISTORY_DIRECTIONS.includes(directionArg as AgentSessionHistoryDirection)) {
+    const direction = AGENT_SESSION_HISTORY_DIRECTIONS.find(
+      (candidate) => candidate === directionArg
+    )
+    if (!direction) {
       throw new RuntimeClientError(
         'invalid_argument',
         `--direction must be one of ${AGENT_SESSION_HISTORY_DIRECTIONS.join(', ')}.`
       )
     }
-    const direction = directionArg as AgentSessionHistoryDirection
     const cursorArg = getOptionalStringFlag(flags, 'cursor')
     if (direction !== 'tail' && !cursorArg) {
       throw new RuntimeClientError(
@@ -146,7 +147,7 @@ export const CHAT_HANDLERS: Record<string, CommandHandler> = {
     }
     printResult({ ...result, result: projected }, json, (value) => {
       const header = value.reset ? `cursor reset: ${value.reset}; showing the bounded tail.\n` : ''
-      const footer = `\n---\nhasOlder=${value.hasOlder} hasNewer=${value.hasNewer} nextCursor=${value.window.nextCursor}`
+      const footer = `\n---\nhasOlder=${value.hasOlder} hasNewer=${value.hasNewer} nextCursor=${JSON.stringify(value.window.nextCursor)}`
       return header + (value.lines.length > 0 ? value.lines.join('\n') : '(no rows)') + footer
     })
   },

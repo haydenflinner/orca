@@ -78,6 +78,7 @@ export function ActivityThreadListPane({
   showInlineActions = true,
   collapsedGroupKeys,
   onToggleGroupCollapse,
+  columns = 1,
   scrollTopRef
 }: {
   threadListRef?: React.RefObject<HTMLDivElement | null>
@@ -116,6 +117,8 @@ export function ActivityThreadListPane({
   showInlineActions?: boolean
   collapsedGroupKeys?: ReadonlySet<string>
   onToggleGroupCollapse?: (groupKey: string) => void
+  /** Two packs thread rows into side-by-side pairs; group headers still span full width. */
+  columns?: 1 | 2
   /** Optional view-local scroll memory; updated without triggering React renders. */
   scrollTopRef?: React.MutableRefObject<number>
 }): React.JSX.Element {
@@ -168,9 +171,10 @@ export function ActivityThreadListPane({
       buildActivityVirtualItems({
         groups: visibleThreadGroups,
         groupBy,
-        collapsedGroupKeys: effectiveCollapsedGroupKeys
+        collapsedGroupKeys: effectiveCollapsedGroupKeys,
+        columns
       }),
-    [visibleThreadGroups, groupBy, effectiveCollapsedGroupKeys]
+    [visibleThreadGroups, groupBy, effectiveCollapsedGroupKeys, columns]
   )
   const headerItemIndexes = useMemo(
     () => getActivityHeaderItemIndexes(virtualItems),

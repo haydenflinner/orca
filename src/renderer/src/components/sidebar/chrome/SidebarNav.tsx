@@ -1,5 +1,5 @@
 import React from 'react'
-import { BookOpen, CalendarClock, EyeOff, Files, Search, Smartphone } from 'lucide-react'
+import { BookOpen, CalendarClock, Files, Search, Smartphone } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useAppStore } from '@/store/index'
 import { cn } from '@/lib/class-names'
@@ -7,14 +7,22 @@ import { useShortcutKeyComboDetails } from '@/lib/keyboard/useShortcutLabel'
 import { ShortcutKeyCombo } from '@/components/ui/ShortcutKeyCombo'
 import { useMobileSidebarOnboardingBadge } from './mobile-sidebar-onboarding-badge'
 import { ContextMenu, ContextMenuTrigger } from '@/components/ui/context-menu'
-import { Button } from '@/components/ui/button'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { SetupGuideSidebarEntry } from '../../setup-guide/SetupGuideSidebarEntry'
 import { SidebarTaskNavButton } from './SidebarTaskNavButton'
-import { HideSidebarMenu } from './sidebar-nav-controls'
+import {
+  HideSidebarMenu,
+  SIDEBAR_NAV_TRAILING_HOVER_CLASS,
+  SidebarNavHideButton
+} from './sidebar-nav-controls'
 import { useTranslate } from '@/i18n/use-translate'
 import { lazyWithRetry } from '@/app-shell/startup/lazy-with-retry'
 import type { GlobalSettings } from '../../../../../shared/settings/global-settings-types'
+
+export function shouldShowSearchButton(
+  settings: Partial<Pick<GlobalSettings, 'showSearchButton'>> | null | undefined
+): boolean {
+  return settings?.showSearchButton !== false
+}
 
 export function shouldShowMobileButton(
   settings: Partial<Pick<GlobalSettings, 'showMobileButton'>> | null | undefined
@@ -63,6 +71,7 @@ const SidebarNav = React.memo(function SidebarNav() {
   const updateSettings = useAppStore((s) => s.updateSettings)
   const activeView = useAppStore((s) => s.activeView)
   const showAgentDashboardButton = useAppStore((s) => shouldShowAgentDashboardButton(s.settings))
+  const showSearchButton = useAppStore((s) => shouldShowSearchButton(s.settings))
   const showAutomationsButton = useAppStore((s) => shouldShowAutomationsButton(s.settings))
   const showMobileButton = useAppStore((s) => shouldShowMobileButton(s.settings))
   const showArtifactsButton = useAppStore((s) => shouldShowArtifactsButton(s.settings))
@@ -72,6 +81,9 @@ const SidebarNav = React.memo(function SidebarNav() {
   const artifactsActive = activeView === 'artifacts'
   const skillsActive = activeView === 'skills'
   const mobileOnboardingBadge = useMobileSidebarOnboardingBadge(showMobileButton)
+  const hideSearchButton = React.useCallback(() => {
+    void updateSettings({ showSearchButton: false })
+  }, [updateSettings])
   const hideAutomationsButton = React.useCallback(() => {
     void updateSettings({ showAutomationsButton: false })
   }, [updateSettings])
@@ -87,65 +99,82 @@ const SidebarNav = React.memo(function SidebarNav() {
 
   return (
     <div
-      className="flex flex-col gap-0.5 px-2 pt-2 pb-1"
+      className="flex flex-col gap-0.5 px-2 pt-1 pb-0.5 empty:hidden"
       data-contextual-tour-target="sidebar-navigation"
     >
-      <button
-        type="button"
-        onClick={() => openModal('worktree-palette')}
-        aria-label={t(
-          'auto.components.sidebar.SidebarNav.0c3395fd32',
-          'Search worktrees and browser tabs'
-        )}
-        className="group flex w-full items-center gap-2 rounded-md bg-worktree-sidebar-foreground/5 px-2 py-1.5 text-left text-[13px] font-medium tracking-tight text-worktree-sidebar-foreground/60 transition-colors hover:bg-worktree-sidebar-foreground/8"
-      >
-        <Search
-          className="size-4 shrink-0 text-worktree-sidebar-foreground/30"
-          strokeWidth={1.75}
-        />
-        <span className="flex-1">
-          {t('auto.components.sidebar.SidebarNav.80611a8b10', 'Search')}
-        </span>
-        <span className="pointer-events-none hidden shrink-0 items-center gap-1 group-hover:flex group-focus-within:flex">
-          {worktreePaletteShortcutCombos.map((combo) => (
-            <ShortcutKeyCombo
-              key={combo.keys.join('-')}
-              keys={combo.keys}
-              doubleTap={combo.doubleTap}
-              className="inline-flex gap-0.5"
-              keyCapClassName="min-w-4 border-worktree-sidebar-border/80 bg-worktree-sidebar-foreground/8 px-1 py-px text-[9px] text-worktree-sidebar-foreground/55 shadow-none"
-              separatorClassName="text-[9px] text-worktree-sidebar-foreground/45"
-            />
-          ))}
-        </span>
-      </button>
+      {showSearchButton ? (
+        <ContextMenu>
+          <ContextMenuTrigger asChild>
+            <div className="group relative">
+              <button
+                type="button"
+                onClick={() => openModal('worktree-palette')}
+                aria-label={t(
+                  'auto.components.sidebar.SidebarNav.0c3395fd32',
+                  'Search worktrees and browser tabs'
+                )}
+                className="flex w-full items-center gap-2 rounded-md bg-worktree-sidebar-foreground/5 px-2 py-1 text-left text-[13px] font-medium tracking-tight text-worktree-sidebar-foreground/60 transition-colors hover:bg-worktree-sidebar-foreground/8"
+              >
+                <Search
+                  className="size-4 shrink-0 text-worktree-sidebar-foreground/30"
+                  strokeWidth={1.75}
+                />
+                <span className="flex-1">
+                  {t('auto.components.sidebar.SidebarNav.80611a8b10', 'Search')}
+                </span>
+              </button>
+              <span className={SIDEBAR_NAV_TRAILING_HOVER_CLASS}>
+                <span className="pointer-events-none hidden shrink-0 items-center gap-1 group-hover:flex group-focus-within:flex">
+                  {worktreePaletteShortcutCombos.map((combo) => (
+                    <ShortcutKeyCombo
+                      key={combo.keys.join('-')}
+                      keys={combo.keys}
+                      doubleTap={combo.doubleTap}
+                      className="inline-flex gap-0.5"
+                      keyCapClassName="min-w-4 border-worktree-sidebar-border/80 bg-worktree-sidebar-foreground/8 px-1 py-px text-[9px] text-worktree-sidebar-foreground/55 shadow-none"
+                      separatorClassName="text-[9px] text-worktree-sidebar-foreground/45"
+                    />
+                  ))}
+                </span>
+                <SidebarNavHideButton onHide={hideSearchButton} />
+              </span>
+            </div>
+          </ContextMenuTrigger>
+          <HideSidebarMenu onHide={hideSearchButton} />
+        </ContextMenu>
+      ) : null}
       <SetupGuideSidebarEntry />
       <SidebarTaskNavButton />
       {showArtifactsButton ? (
         <ContextMenu>
           <ContextMenuTrigger asChild>
-            <button
-              type="button"
-              onClick={openArtifactsPage}
-              aria-current={artifactsActive ? 'page' : undefined}
-              className={cn(
-                'flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] font-medium tracking-tight transition-colors',
-                artifactsActive
-                  ? 'bg-worktree-sidebar-accent text-worktree-sidebar-accent-foreground'
-                  : 'text-worktree-sidebar-foreground/60 hover:bg-worktree-sidebar-foreground/8'
-              )}
-            >
-              <Files
+            <div className="group relative">
+              <button
+                type="button"
+                onClick={openArtifactsPage}
+                aria-current={artifactsActive ? 'page' : undefined}
                 className={cn(
-                  'size-4 shrink-0',
-                  !artifactsActive && 'text-worktree-sidebar-foreground/30'
+                  'flex w-full items-center gap-2 rounded-md px-2 py-1 text-left text-[13px] font-medium tracking-tight transition-colors',
+                  artifactsActive
+                    ? 'bg-worktree-sidebar-accent text-worktree-sidebar-accent-foreground'
+                    : 'text-worktree-sidebar-foreground/60 hover:bg-worktree-sidebar-foreground/8'
                 )}
-                strokeWidth={artifactsActive ? 2.25 : 1.75}
-              />
-              <span className="flex-1">
-                {t('auto.components.sidebar.SidebarNav.artifacts', 'Artifacts')}
+              >
+                <Files
+                  className={cn(
+                    'size-4 shrink-0',
+                    !artifactsActive && 'text-worktree-sidebar-foreground/30'
+                  )}
+                  strokeWidth={artifactsActive ? 2.25 : 1.75}
+                />
+                <span className="flex-1">
+                  {t('auto.components.sidebar.SidebarNav.artifacts', 'Artifacts')}
+                </span>
+              </button>
+              <span className={SIDEBAR_NAV_TRAILING_HOVER_CLASS}>
+                <SidebarNavHideButton onHide={hideArtifactsButton} />
               </span>
-            </button>
+            </div>
           </ContextMenuTrigger>
           <HideSidebarMenu onHide={hideArtifactsButton} />
         </ContextMenu>
@@ -153,28 +182,33 @@ const SidebarNav = React.memo(function SidebarNav() {
       {showSkillsButton ? (
         <ContextMenu>
           <ContextMenuTrigger asChild>
-            <button
-              type="button"
-              onClick={openSkillsPage}
-              aria-current={skillsActive ? 'page' : undefined}
-              className={cn(
-                'flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] font-medium tracking-tight transition-colors',
-                skillsActive
-                  ? 'bg-worktree-sidebar-accent text-worktree-sidebar-accent-foreground'
-                  : 'text-worktree-sidebar-foreground/60 hover:bg-worktree-sidebar-foreground/8'
-              )}
-            >
-              <BookOpen
+            <div className="group relative">
+              <button
+                type="button"
+                onClick={openSkillsPage}
+                aria-current={skillsActive ? 'page' : undefined}
                 className={cn(
-                  'size-4 shrink-0',
-                  !skillsActive && 'text-worktree-sidebar-foreground/30'
+                  'flex w-full items-center gap-2 rounded-md px-2 py-1 text-left text-[13px] font-medium tracking-tight transition-colors',
+                  skillsActive
+                    ? 'bg-worktree-sidebar-accent text-worktree-sidebar-accent-foreground'
+                    : 'text-worktree-sidebar-foreground/60 hover:bg-worktree-sidebar-foreground/8'
                 )}
-                strokeWidth={skillsActive ? 2.25 : 1.75}
-              />
-              <span className="flex-1">
-                {t('auto.components.sidebar.SidebarNav.skills', 'Skills')}
+              >
+                <BookOpen
+                  className={cn(
+                    'size-4 shrink-0',
+                    !skillsActive && 'text-worktree-sidebar-foreground/30'
+                  )}
+                  strokeWidth={skillsActive ? 2.25 : 1.75}
+                />
+                <span className="flex-1">
+                  {t('auto.components.sidebar.SidebarNav.skills', 'Skills')}
+                </span>
+              </button>
+              <span className={SIDEBAR_NAV_TRAILING_HOVER_CLASS}>
+                <SidebarNavHideButton onHide={hideSkillsButton} />
               </span>
-            </button>
+            </div>
           </ContextMenuTrigger>
           <HideSidebarMenu onHide={hideSkillsButton} />
         </ContextMenu>
@@ -182,28 +216,33 @@ const SidebarNav = React.memo(function SidebarNav() {
       {showAutomationsButton ? (
         <ContextMenu>
           <ContextMenuTrigger asChild>
-            <button
-              type="button"
-              onClick={openAutomationsPage}
-              aria-current={automationsActive ? 'page' : undefined}
-              className={cn(
-                'flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] font-medium tracking-tight transition-colors',
-                automationsActive
-                  ? 'bg-worktree-sidebar-accent text-worktree-sidebar-accent-foreground'
-                  : 'text-worktree-sidebar-foreground/60 hover:bg-worktree-sidebar-foreground/8'
-              )}
-            >
-              <CalendarClock
+            <div className="group relative">
+              <button
+                type="button"
+                onClick={openAutomationsPage}
+                aria-current={automationsActive ? 'page' : undefined}
                 className={cn(
-                  'size-4 shrink-0',
-                  !automationsActive && 'text-worktree-sidebar-foreground/30'
+                  'flex w-full items-center gap-2 rounded-md px-2 py-1 text-left text-[13px] font-medium tracking-tight transition-colors',
+                  automationsActive
+                    ? 'bg-worktree-sidebar-accent text-worktree-sidebar-accent-foreground'
+                    : 'text-worktree-sidebar-foreground/60 hover:bg-worktree-sidebar-foreground/8'
                 )}
-                strokeWidth={automationsActive ? 2.25 : 1.75}
-              />
-              <span className="flex-1">
-                {t('auto.components.sidebar.SidebarNav.f323383e9a', 'Automations')}
+              >
+                <CalendarClock
+                  className={cn(
+                    'size-4 shrink-0',
+                    !automationsActive && 'text-worktree-sidebar-foreground/30'
+                  )}
+                  strokeWidth={automationsActive ? 2.25 : 1.75}
+                />
+                <span className="flex-1">
+                  {t('auto.components.sidebar.SidebarNav.f323383e9a', 'Automations')}
+                </span>
+              </button>
+              <span className={SIDEBAR_NAV_TRAILING_HOVER_CLASS}>
+                <SidebarNavHideButton onHide={hideAutomationsButton} />
               </span>
-            </button>
+            </div>
           </ContextMenuTrigger>
           <HideSidebarMenu onHide={hideAutomationsButton} />
         </ContextMenu>
@@ -218,7 +257,7 @@ const SidebarNav = React.memo(function SidebarNav() {
           <ContextMenuTrigger asChild>
             <div
               className={cn(
-                'group flex w-full items-center rounded-md text-[13px] font-medium tracking-tight transition-colors',
+                'group relative flex w-full items-center rounded-md text-[13px] font-medium tracking-tight transition-colors',
                 mobileActive
                   ? 'bg-worktree-sidebar-accent text-worktree-sidebar-accent-foreground'
                   : 'text-worktree-sidebar-foreground/60 hover:bg-worktree-sidebar-foreground/8'
@@ -231,7 +270,7 @@ const SidebarNav = React.memo(function SidebarNav() {
                   openMobilePage()
                 }}
                 aria-current={mobileActive ? 'page' : undefined}
-                className="flex min-w-0 flex-1 items-center gap-2 rounded-md px-2 py-1.5 text-left"
+                className="flex min-w-0 flex-1 items-center gap-2 rounded-md px-2 py-1 text-left"
               >
                 <Smartphone
                   className={cn(
@@ -244,40 +283,14 @@ const SidebarNav = React.memo(function SidebarNav() {
                   {t('auto.components.sidebar.SidebarNav.1b5c41caee', 'Orca Mobile')}
                 </span>
                 {mobileOnboardingBadge.visible ? (
-                  <span className="shrink-0 rounded-full bg-primary px-1.5 py-px text-[10px] font-semibold text-primary-foreground">
+                  <span className="mr-5 shrink-0 rounded-full bg-primary px-1.5 py-px text-[10px] font-semibold text-primary-foreground">
                     {t('auto.components.sidebar.SidebarNav.c86d83b5c3', 'New')}
                   </span>
                 ) : null}
               </button>
-              {mobileOnboardingBadge.hasPairedDevice ? (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon-xs"
-                      className={cn(
-                        'mr-1 text-worktree-sidebar-foreground/55 hover:bg-worktree-sidebar-foreground/10 hover:text-worktree-sidebar-foreground',
-                        mobileActive &&
-                          'text-worktree-sidebar-accent-foreground/70 hover:text-worktree-sidebar-accent-foreground'
-                      )}
-                      onClick={(event) => {
-                        event.stopPropagation()
-                        hideMobileButton()
-                      }}
-                      aria-label={t(
-                        'auto.components.sidebar.SidebarNav.d599269755',
-                        'Hide from sidebar'
-                      )}
-                    >
-                      <EyeOff className="size-3.5" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side="top" sideOffset={4}>
-                    {t('auto.components.sidebar.SidebarNav.d599269755', 'Hide from sidebar')}
-                  </TooltipContent>
-                </Tooltip>
-              ) : null}
+              <span className={SIDEBAR_NAV_TRAILING_HOVER_CLASS}>
+                <SidebarNavHideButton onHide={hideMobileButton} />
+              </span>
             </div>
           </ContextMenuTrigger>
           <HideSidebarMenu onHide={hideMobileButton} />
