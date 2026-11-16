@@ -111,7 +111,11 @@ export abstract class OrcaRuntimeWithApplyLayout extends OrcaRuntimeWithPickMost
     }
 
     // Publish remote-desktop ownership even at equal geometry; also notify on override changes to repair inconsistent held banners (#7588).
-    const overrideChanged = (prevFitOverride != null) !== (target.kind === 'phone')
+    // A phone→phone re-fit still replaces the held grid, so presence-only misses stale desktop dims.
+    const overrideChanged =
+      (prevFitOverride != null) !== (target.kind === 'phone') ||
+      (target.kind === 'phone' &&
+        (prevFitOverride?.cols !== target.cols || prevFitOverride?.rows !== target.rows))
     if (target.kind === 'remote-desktop' || modeChanged || overrideChanged) {
       // Arm cascade suppression before desktop-fit notifications can provoke collateral renderer resizes.
       if (target.kind === 'desktop') {
