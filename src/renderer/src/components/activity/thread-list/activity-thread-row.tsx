@@ -61,6 +61,7 @@ export const ActivityThreadRow = React.memo(function ActivityThreadRow({
   selected,
   multiSelected = false,
   onSelect,
+  onOpen,
   onJump,
   onMarkRead,
   onMarkUnread,
@@ -76,6 +77,7 @@ export const ActivityThreadRow = React.memo(function ActivityThreadRow({
   /** In the multi-selection and not the open row. */
   multiSelected?: boolean
   onSelect: (thread: AgentPaneThread, event: ActivityThreadClickEvent) => void
+  onOpen?: (thread: AgentPaneThread) => void
   onJump: (thread: AgentPaneThread) => void
   onMarkRead: (thread: AgentPaneThread) => void
   onMarkUnread: (thread: AgentPaneThread) => void
@@ -102,10 +104,20 @@ export const ActivityThreadRow = React.memo(function ActivityThreadRow({
     >
       <div
         data-current={selected ? 'true' : undefined}
+        data-pane-key={thread.paneKey}
         data-worktree-card-surface="true"
         data-worktree-card-active={selected ? 'primary' : undefined}
         data-worktree-card-selected={multiSelected || undefined}
         onClick={(event) => onSelect(thread, event)}
+        // Focus opens the thread so Tab and arrow navigation scan agents without a confirm key.
+        onFocus={() => onOpen?.(thread)}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault()
+            onSelect(thread, event)
+          }
+        }}
+        tabIndex={0}
         role="listitem"
         aria-label={taskTitle}
         aria-current={selected ? 'true' : undefined}
@@ -120,6 +132,8 @@ export const ActivityThreadRow = React.memo(function ActivityThreadRow({
               {/* Keep the activation target separate from markdown links and row actions. */}
               <button
                 type="button"
+                // The row div owns the tab stop; this stays clickable and screen-reader operable.
+                tabIndex={-1}
                 aria-label={taskTitle}
                 aria-keyshortcuts="Enter Space"
                 onClick={(event) => {

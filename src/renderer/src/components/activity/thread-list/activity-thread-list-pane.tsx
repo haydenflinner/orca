@@ -15,6 +15,7 @@ import {
   getPreviousStickyHeaderIndex
 } from '../../sidebar/worktree-list/viewport/virtual-rows'
 import { ActivityThreadVirtualRow } from './activity-thread-virtual-row'
+import { useActivityThreadKeyboardNavigation } from './use-activity-thread-keyboard-navigation'
 import { ActivityThreadListResizeHandle } from './activity-thread-list-resize-handle'
 import {
   buildActivityVirtualItems,
@@ -290,6 +291,13 @@ export function ActivityThreadListPane({
           virtualItems: virtualizer.getVirtualItems()
         })
       : null
+  useActivityThreadKeyboardNavigation(
+    scrollContainerRef,
+    virtualItems,
+    virtualizer,
+    selectedPaneKey,
+    selectedItemIndex
+  )
 
   const resizable = onResizeStart !== undefined
   return (

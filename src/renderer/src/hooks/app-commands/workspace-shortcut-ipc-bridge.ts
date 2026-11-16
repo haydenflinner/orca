@@ -2,6 +2,7 @@ import { TOGGLE_QUICK_COMMANDS_MENU_EVENT } from '@/lib/terminal/quick-commands/
 import { TOGGLE_WORKSPACE_BOARD_EVENT } from '@/components/sidebar/workspace-board/surface/useWorkspaceBoardPanel'
 import { activateTabNumberShortcut } from '@/lib/keyboard/tab-number-shortcuts'
 import { emitCmdJRowIndexJump } from '@/lib/workspace/search/palette/cmd-j-row-index-jump'
+import { emitAgentsListIndexJump } from '@/components/activity/agents-list-index-jump'
 import { getVisibleWorktreeShortcutTargets } from '@/components/sidebar/worktree-list/listing/visible-worktrees'
 import { activateAndRevealWorkspace } from '@/lib/workspace/activation/worktree-activation'
 import { isGitRepoKind } from '../../../../shared/repository/repo-kind'
@@ -74,6 +75,11 @@ export function registerWorkspaceShortcutIpcBridge(unsubs: (() => void)[]): void
       // Route Cmd+J digits to palette recents because main already prevented their native input.
       if (store.activeModal === 'worktree-palette') {
         emitCmdJRowIndexJump(index)
+        return
+      }
+      // Digits address the filtered agents list while it is the sidebar body.
+      if (store.sidebarBody === 'agents') {
+        emitAgentsListIndexJump(index)
         return
       }
       if (store.activeView !== 'terminal') {

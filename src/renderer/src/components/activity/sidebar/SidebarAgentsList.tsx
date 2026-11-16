@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
 import { SidebarActivityBadge } from './sidebar-activity-badge'
@@ -9,6 +9,7 @@ import { useTranslate } from '@/i18n/use-translate'
 import { hasActivityThreadWorkspace } from '@/components/activity/thread-list/activity-thread-actions'
 import { useActivityThreadActionBindings } from '@/components/activity/thread-list/use-activity-thread-action-bindings'
 import { ActivityThreadListPane } from '@/components/activity/thread-list/activity-thread-list-pane'
+import { subscribeAgentsListIndexJump } from '@/components/activity/agents-list-index-jump'
 import { useAgentPaneThreads } from '@/components/activity/threads/use-agent-pane-threads'
 import '@/components/activity/thread-list/activity-thread-controls'
 import { ActivityThreadOptionsMenu } from '@/components/activity/thread-list/activity-thread-options-menu'
@@ -117,6 +118,7 @@ function SidebarAgentsListBody({
   const showChildAgents = useAppStore((s) => s.agentsShowChildAgents)
   const setShowChildAgents = useAppStore((s) => s.setAgentsShowChildAgents)
   const activityFilterInputRef = useRef<HTMLInputElement | null>(null)
+  const threadListRef = useRef<HTMLDivElement | null>(null)
 
   const handleShowSearchChange = useCallback(
     (visible: boolean) => {
@@ -157,6 +159,30 @@ function SidebarAgentsListBody({
     unacknowledgeAgents: storeData.unacknowledgeAgents,
     setSelectedPaneKey
   })
+
+  // Cmd+digit names a row of the filtered list while this view is the sidebar body.
+  useEffect(
+    () =>
+      subscribeAgentsListIndexJump((index) => {
+        const thread = threads.visibleThreads[index]
+        if (!thread) {
+          return
+        }
+        selectThread(thread)
+        // After the pane scrolls the row into the virtual window, focus it so arrows continue from it.
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            const row = threadListRef.current?.querySelector(
+              `[data-pane-key="${CSS.escape(thread.paneKey)}"]`
+            )
+            if (row instanceof HTMLElement) {
+              row.focus()
+            }
+          })
+        })
+      }),
+    [threads, selectThread]
+  )
 
   const worktreesByRepo = selectWorktreesByRepo(storeData)
   const detectedWorktreesByRepo = selectDetectedWorktreesByRepo(storeData)
@@ -234,6 +260,7 @@ function SidebarAgentsListBody({
         showOptionsMenu={false}
         showInlineActions={false}
         scrollTopRef={scrollTopRef}
+        threadListRef={threadListRef}
       />
       {optionsTarget
         ? createPortal(

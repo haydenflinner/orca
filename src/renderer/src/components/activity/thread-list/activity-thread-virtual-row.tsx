@@ -89,6 +89,7 @@ export function ActivityThreadVirtualRow({
             selected={isOpen}
             multiSelected={!isOpen && multiSelectedKeys.has(item.thread.paneKey)}
             onSelect={onSelectThread}
+            onOpen={onOpenThread}
             onJump={onJumpToWorkspace}
             onMarkRead={onMarkThreadRead}
             onMarkUnread={onMarkThreadUnread}
