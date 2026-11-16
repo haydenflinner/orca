@@ -7,6 +7,7 @@ import {
   type RefObject
 } from 'react'
 import { hasVisibleOverlay } from '@/lib/overlay-interaction/visible-overlay'
+import { ACTIVITY_VIRTUAL_LIST_SELECTOR } from '@/components/activity/activity-thread-virtual-items'
 import { DICTATION_FOCUS_INPUT_EVENT } from '../../../dictation/dictation-control-events'
 import { routeNativeChatRootKeyToInput } from './native-chat-root-key-routing'
 import { shouldFocusNativeChatPaneFromPointerTarget } from './native-chat-typing-redirect'
@@ -36,9 +37,11 @@ export function useNativeChatRootInputRouting(
       return
     }
     // Body/cover focus has no input owner; multiple revealed chats make its destination ambiguous.
+    // An activity-list row holds focus for keyboard navigation but its typing still belongs to the open chat.
     const ownsUnfocusedInput = (target: EventTarget | null): boolean =>
       target instanceof Node &&
-      target.contains(root) &&
+      (target.contains(root) ||
+        (target instanceof Element && target.closest(ACTIVITY_VIRTUAL_LIST_SELECTOR) !== null)) &&
       revealedChatRoots.size === 1 &&
       !hasVisibleOverlay({ ignoreDismissed: true })
     const onKeyDown = (event: KeyboardEvent): void => {

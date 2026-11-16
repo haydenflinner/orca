@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react'
 
 import { focusNativeChatPromptCard } from '../../prompts/use-native-chat-prompt-card-focus'
+import { ACTIVITY_VIRTUAL_LIST_SELECTOR } from '@/components/activity/activity-thread-virtual-items'
 import { shouldPreserveEditableFocus } from '@/lib/text-input/focus/editable-focus-preservation'
 import { scheduleNextFrame } from '@/components/terminal-pane/input/ime/terminal-ime-input-context-refresh'
 import { getOverlayFocusOwners } from '@/lib/overlay-interaction/overlay-focus-ownership'
@@ -183,6 +184,11 @@ export function useNativeChatComposerRevealFocus({
         rootRef.current?.contains(active) === true &&
         !active?.closest('[hidden], [inert]')
       ) {
+        finish()
+        return
+      }
+      // A focused activity row is deliberate list navigation; its typing still routes to the composer.
+      if (active instanceof Element && active.closest(ACTIVITY_VIRTUAL_LIST_SELECTOR) !== null) {
         finish()
         return
       }

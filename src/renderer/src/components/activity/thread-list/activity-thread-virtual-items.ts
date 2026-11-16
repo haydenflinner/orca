@@ -1,6 +1,9 @@
 import type { ActivityGroupBy } from '../../../../../shared/agent-status/presentation/agents-view-thread-filters'
 import type { ActivityThreadGroup, AgentPaneThread } from '../threads/activity-thread-types'
 
+/** DOM contract for "focus is on the activity list" — used by chat focus/typing routing. */
+export const ACTIVITY_VIRTUAL_LIST_SELECTOR = '[data-activity-virtual-list]'
+
 /** One row of the virtualized Activity list: a group header or a thread. */
 export type ActivityVirtualItemDescriptor =
   | { type: 'header'; group: ActivityThreadGroup }
