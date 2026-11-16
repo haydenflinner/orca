@@ -13,6 +13,10 @@ import { subscribeAgentsListIndexJump } from '@/components/activity/agents-list-
 import { ActivityIndexHintsContext } from '@/components/activity/activity-index-hints-context'
 import { useShortcutKeyComboDetails } from '@/hooks/useShortcutLabel'
 import { useModifierHeldClass } from '../editor/rich-markdown/viewport/useModifierHeldClass'
+import { getShortcutPlatform } from '@/lib/keyboard/shortcut-platform'
+import { keybindingMatchesAction } from '../../../../../shared/keybindings/matching'
+import { textFieldClaimsActionKey } from '@/lib/keyboard/text-field-shortcut-policy'
+import { hasVisibleOverlay } from '@/lib/overlay-interaction/visible-overlay'
 import { useAgentPaneThreads } from '@/components/activity/threads/use-agent-pane-threads'
 import '@/components/activity/thread-list/activity-thread-controls'
 import { ActivityThreadOptionsMenu } from '@/components/activity/thread-list/activity-thread-options-menu'
@@ -183,6 +187,40 @@ function SidebarAgentsListBody({
     navigator.userAgent.includes('Mac'),
     'agents-index-hints-armed'
   )
+
+  // The "focus the sidebar list" chord lands on the open row so arrows continue from it.
+  const keybindings = useAppStore((s) => s.keybindings)
+  const activeModal = useAppStore((s) => s.activeModal)
+  const focusCurrentRow = useCallback(() => {
+    const paneKey = effectiveSelectedPaneKey ?? visibleThreads[0]?.paneKey
+    if (!paneKey) {
+      return
+    }
+    // The open row is kept mounted by the virtualizer, so it is focusable even offscreen.
+    const row = threadListRef.current?.querySelector(`[data-pane-key="${CSS.escape(paneKey)}"]`)
+    if (row instanceof HTMLElement) {
+      row.focus()
+    }
+  }, [effectiveSelectedPaneKey, visibleThreads])
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.defaultPrevented || event.isComposing || activeModal !== 'none') {
+        return
+      }
+      const platform = getShortcutPlatform()
+      if (
+        keybindingMatchesAction('sidebar.focusWorktreeList', event, platform, keybindings) &&
+        !textFieldClaimsActionKey(event, 'sidebar.focusWorktreeList') &&
+        !hasVisibleOverlay()
+      ) {
+        event.preventDefault()
+        focusCurrentRow()
+      }
+    }
+    document.addEventListener('keydown', onKeyDown)
+    return () => document.removeEventListener('keydown', onKeyDown)
+  }, [keybindings, activeModal, focusCurrentRow])
 
   // Cmd+digit names a row of the filtered list while this view is the sidebar body.
   useEffect(

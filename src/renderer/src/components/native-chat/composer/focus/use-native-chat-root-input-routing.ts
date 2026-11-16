@@ -10,7 +10,11 @@ import { hasVisibleOverlay } from '@/lib/overlay-interaction/visible-overlay'
 import { ACTIVITY_VIRTUAL_LIST_SELECTOR } from '@/components/activity/activity-thread-virtual-items'
 import { DICTATION_FOCUS_INPUT_EVENT } from '../../../dictation/dictation-control-events'
 import { routeNativeChatRootKeyToInput } from './native-chat-root-key-routing'
-import { shouldFocusNativeChatPaneFromPointerTarget } from './native-chat-typing-redirect'
+import {
+  shouldFocusNativeChatPaneFromPointerTarget,
+  shouldRedirectNativeChatTyping
+} from './native-chat-typing-redirect'
+import { getShortcutPlatform } from '@/lib/keyboard/shortcut-platform'
 import {
   useNativeChatComposerRevealFocus,
   type NativeChatComposerRevealFocusArgs
@@ -45,12 +49,21 @@ export function useNativeChatRootInputRouting(
       revealedChatRoots.size === 1 &&
       !hasVisibleOverlay({ ignoreDismissed: true })
     const onKeyDown = (event: KeyboardEvent): void => {
-      if (event.target !== root && ownsUnfocusedInput(event.target)) {
-        routeNativeChatRootKeyToInput(
-          event,
-          nativeChatComposerDestination(rootRef.current, composerRef.current),
-          questionAnswerInputRef.current
-        )
+      if (event.target === root || !ownsUnfocusedInput(event.target)) {
+        return
+      }
+      // A row's first typed char inserts then hands the composer the caret, so Enter and editing work natively.
+      const rowTyping =
+        shouldRedirectNativeChatTyping(event, getShortcutPlatform() === 'darwin') &&
+        event.target instanceof Element &&
+        event.target.closest(ACTIVITY_VIRTUAL_LIST_SELECTOR) !== null
+      routeNativeChatRootKeyToInput(
+        event,
+        nativeChatComposerDestination(rootRef.current, composerRef.current),
+        questionAnswerInputRef.current
+      )
+      if (rowTyping) {
+        nativeChatComposerDestination(rootRef.current, composerRef.current)?.focus()
       }
     }
     const onDictationFocusInput = (): void => {
