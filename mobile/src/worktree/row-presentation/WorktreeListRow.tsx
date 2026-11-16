@@ -71,7 +71,7 @@ function WorktreeListRowComponent({
   // Match desktop formatBranchName by hiding refs/heads/ prefix.
   const metaText = isFolderWorkspace ? folderMeta : item.branch.replace(/^refs\/heads\//, '')
   const lineageDepth = Math.max(0, view.lineageDepth ?? 0)
-  const indent = projectGroupRowIndent(item, view) + lineageDepth * 18
+  const indent = projectGroupRowIndent(view) + lineageDepth * 18
   const count = view.lineageChildCount ?? 0
   const shouldHideRepo = hideRepo && !view.showProjectName
   const showRepoChip = cardDetails.repoInTitle && !shouldHideRepo && !isFolderWorkspace

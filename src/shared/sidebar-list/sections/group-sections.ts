@@ -185,7 +185,8 @@ export function appendOrderedGroups(
             result.push(
               buildImportedWorktreesCardRow(
                 candidate,
-                ctx.noticeHostContextLabelByRepoId?.get(repoId)
+                ctx.noticeHostContextLabelByRepoId?.get(repoId),
+                projectGroupDepth + 1
               )
             )
           }
@@ -196,7 +197,8 @@ export function appendOrderedGroups(
             result.push(
               buildNewExternalWorktreesInboxRow(
                 candidate,
-                ctx.noticeHostContextLabelByRepoId?.get(repoId)
+                ctx.noticeHostContextLabelByRepoId?.get(repoId),
+                projectGroupDepth + 1
               )
             )
           }
@@ -204,7 +206,7 @@ export function appendOrderedGroups(
         // Place in-progress creates atop their own repo so the workspace appears where it will land.
         for (const repoId of repoIds) {
           for (const creation of pendingByRepo.get(repoId) ?? []) {
-            result.push(buildPendingCreationRow(creation, repoMap))
+            result.push(buildPendingCreationRow(creation, repoMap, projectGroupDepth + 1))
           }
         }
       }
@@ -214,7 +216,8 @@ export function appendOrderedGroups(
           : undefined
       appendWorktreeRows(result, repoOf, occurrencePlan, {
         collapsedGroups,
-        groupDepth: projectGroupDepth,
+        // Repo items are children of their section header and render one tree level under it.
+        groupDepth: groupBy === 'repo' ? projectGroupDepth + 1 : projectGroupDepth,
         sectionKey: key,
         hostContextLabelByRepoId,
         hostContextLabelByWorktreeIdentity: mixedWorktreeHostContextLabels,

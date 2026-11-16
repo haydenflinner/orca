@@ -84,7 +84,13 @@ export type ImportedWorktreesCardRow = {
   hostContextLabel?: string
   hostContextHostId?: ExecutionHostId
 } & (
-  | { placement: 'repo-group'; repo: Repo; hiddenWorktrees: DetectedWorktree[] }
+  | {
+      placement: 'repo-group'
+      repo: Repo
+      hiddenWorktrees: DetectedWorktree[]
+      /** The section rows' depth; the line insets to match its siblings. */
+      groupDepth: number
+    }
   // Outside project grouping no header owns a project, so one line covers a host's projects.
   | {
       placement: 'all-projects'
@@ -103,6 +109,8 @@ export type NewExternalWorktreesInboxRow = {
   key: string
   repo: Repo
   inboxWorktrees: DetectedWorktree[]
+  /** The section rows' depth; the line insets to match its siblings. */
+  groupDepth: number
   /** Set only when the row's project is checked out on more than one host. */
   hostContextLabel?: string
   hostContextHostId?: ExecutionHostId
@@ -113,6 +121,8 @@ export type PendingCreationRow = {
   key: string
   creationId: string
   repo: Repo | undefined
+  /** The section rows' depth; the row insets to match its siblings. */
+  groupDepth: number
 }
 
 export type FolderWorkspaceRow = {

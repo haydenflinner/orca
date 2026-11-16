@@ -25,19 +25,22 @@ import type {
 
 export function buildPendingCreationRow(
   creation: PendingCreationRef,
-  repoMap: Map<string, Repo>
+  repoMap: Map<string, Repo>,
+  groupDepth = 0
 ): PendingCreationRow {
   return {
     type: 'pending-creation',
     key: `pending:${creation.creationId}`,
     creationId: creation.creationId,
-    repo: repoMap.get(creation.repoId)
+    repo: repoMap.get(creation.repoId),
+    groupDepth
   }
 }
 
 export function buildImportedWorktreesCardRow(
   candidate: ImportedWorktreesCardCandidate,
-  hostContext?: NoticeHostContext
+  hostContext?: NoticeHostContext,
+  groupDepth = 0
 ): ImportedWorktreesCardRow {
   return {
     type: 'imported-worktrees-card',
@@ -45,6 +48,7 @@ export function buildImportedWorktreesCardRow(
     repo: candidate.repo,
     hiddenWorktrees: candidate.hiddenWorktrees,
     placement: 'repo-group',
+    groupDepth,
     ...(hostContext
       ? { hostContextLabel: hostContext.label, hostContextHostId: hostContext.hostId }
       : {})
@@ -53,13 +57,15 @@ export function buildImportedWorktreesCardRow(
 
 export function buildNewExternalWorktreesInboxRow(
   candidate: NewExternalWorktreesInboxCandidate,
-  hostContext?: NoticeHostContext
+  hostContext?: NoticeHostContext,
+  groupDepth = 0
 ): NewExternalWorktreesInboxRow {
   return {
     type: 'new-external-worktrees-inbox',
     key: `new-external-worktrees-inbox:${candidate.repo.id}`,
     repo: candidate.repo,
     inboxWorktrees: candidate.inboxWorktrees,
+    groupDepth,
     ...(hostContext
       ? { hostContextLabel: hostContext.label, hostContextHostId: hostContext.hostId }
       : {})

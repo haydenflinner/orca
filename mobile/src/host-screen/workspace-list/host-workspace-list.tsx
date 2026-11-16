@@ -356,13 +356,10 @@ const HostSectionHeader = memo(function HostSectionHeader(props: {
   onToggle: (collapseKey: string) => void
 }) {
   useMobileColorScheme()
-  // Pending creations render as child rows: one level under the group's own depth.
-  const rowIndent = props.isProjectGroup
-    ? projectGroupRowIndent(
-        { workspaceKind: 'git' },
-        { projectGroupDepth: (props.projectGroupDepth ?? 0) + 1 }
-      )
-    : 0
+  // Pending creations render as child rows: one level under their section header's depth.
+  const rowIndent = projectGroupRowIndent({
+    projectGroupDepth: (props.projectGroupDepth ?? 0) + 1
+  })
   const pendingCreations = props.pendingCreations?.map((creation) => (
     <HostPendingCreationRow key={creation.key} creation={creation} indent={rowIndent} />
   ))

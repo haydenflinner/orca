@@ -7,11 +7,14 @@ import ImportedWorktreesVisibilityLine from '../listing/ImportedWorktreesVisibil
 import NewExternalWorktreesInboxLine from '../listing/NewExternalWorktreesInboxLine'
 import type { ImportedWorktreeCardActionState } from '../listing/imported-worktrees-card-actions'
 import type { NewExternalWorktreesInboxActionState } from '../listing/new-external-worktrees-inbox-actions'
+import { getWorktreeCardSurfaceInset } from './indentation'
 
 type NoticeRowFrameProps = {
   vItem: VirtualItem
   measureVirtualRowElement: (element: HTMLDivElement | null) => void
   className?: string
+  /** Left inset matching sibling worktree cards' surface edge. */
+  indentLeft?: number
   children: React.ReactNode
 }
 
@@ -20,6 +23,7 @@ function NoticeRowFrame({
   vItem,
   measureVirtualRowElement,
   className = 'absolute left-0 right-0 top-0',
+  indentLeft = 0,
   children
 }: NoticeRowFrameProps): React.JSX.Element {
   return (
@@ -31,7 +35,7 @@ function NoticeRowFrame({
       data-index={vItem.index}
       ref={measureVirtualRowElement}
       className={className}
-      style={{ transform: getVirtualRowTransform(vItem.start) }}
+      style={{ transform: getVirtualRowTransform(vItem.start), marginLeft: indentLeft }}
     >
       {children}
     </div>
@@ -70,19 +74,26 @@ export function renderImportedWorktreesVirtualRow(args: {
     )
   }
   const actionState = actionStateByProjectId.get(row.repo.id)
-  return frame(
-    <ImportedWorktreesVisibilityLine
-      repoDisplayName={row.repo.displayName}
-      hostContextLabel={row.hostContextLabel}
-      hostContextHostId={row.hostContextHostId}
-      hiddenWorktrees={row.hiddenWorktrees}
-      pending={actionState?.pending ?? false}
-      error={actionState?.error ?? null}
-      onShow={() => args.onShow(row.repo.id)}
-      onKeepHidden={
-        actionState?.forceVisible !== true ? () => args.onKeepHidden(row.repo.id) : undefined
-      }
-    />
+  return (
+    <NoticeRowFrame
+      key={args.vItem.key}
+      vItem={args.vItem}
+      measureVirtualRowElement={args.measureVirtualRowElement}
+      indentLeft={getWorktreeCardSurfaceInset({ isGrouped: true, groupDepth: row.groupDepth })}
+    >
+      <ImportedWorktreesVisibilityLine
+        repoDisplayName={row.repo.displayName}
+        hostContextLabel={row.hostContextLabel}
+        hostContextHostId={row.hostContextHostId}
+        hiddenWorktrees={row.hiddenWorktrees}
+        pending={actionState?.pending ?? false}
+        error={actionState?.error ?? null}
+        onShow={() => args.onShow(row.repo.id)}
+        onKeepHidden={
+          actionState?.forceVisible !== true ? () => args.onKeepHidden(row.repo.id) : undefined
+        }
+      />
+    </NoticeRowFrame>
   )
 }
 
@@ -100,6 +111,7 @@ export function renderNewExternalWorktreesInboxVirtualRow(args: {
       key={args.vItem.key}
       vItem={args.vItem}
       measureVirtualRowElement={args.measureVirtualRowElement}
+      indentLeft={getWorktreeCardSurfaceInset({ isGrouped: true, groupDepth: row.groupDepth })}
     >
       <NewExternalWorktreesInboxLine
         repoDisplayName={row.repo.displayName}
@@ -126,6 +138,10 @@ export function renderPendingCreationVirtualRow(args: {
       vItem={args.vItem}
       measureVirtualRowElement={args.measureVirtualRowElement}
       className="absolute left-0 right-0 top-0 px-2 pb-1.5"
+      indentLeft={getWorktreeCardSurfaceInset({
+        isGrouped: true,
+        groupDepth: args.row.groupDepth
+      })}
     >
       <PendingWorktreeRow
         creationId={args.row.creationId}

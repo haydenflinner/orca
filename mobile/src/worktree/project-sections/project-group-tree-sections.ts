@@ -21,7 +21,7 @@ type TreeSection = Pick<Section, 'isProjectGroup' | 'projectGroupDepth' | 'count
 // Where a section sits in the tree: the groups that hide it and its rows' indent.
 export type GroupTreePlacement = {
   ancestorKeys: readonly string[]
-  rowView: Pick<WorktreeRowView, 'projectGroupDepth' | 'inFolderScanGroup'>
+  rowView: Pick<WorktreeRowView, 'projectGroupDepth'>
 }
 
 export type GroupFolderRows = {
@@ -95,16 +95,14 @@ export function planProjectGroupTree<S extends object>(args: {
   if (args.catalog.projectGroups.length === 0) {
     return {
       sections: withRepoSectionDisplayLabels(args.entries).map(args.projectSection),
-      placements: new Map()
+      placements: new Map(
+        args.entries.map((entry) => [
+          entry[0],
+          { ancestorKeys: [], rowView: { projectGroupDepth: 1 } }
+        ])
+      )
     }
   }
-  const folderScanGroupIds = new Set(
-    args.catalog.projectGroups
-      .filter((group) => group.createdFrom === 'folder-scan')
-      .map(({ id }) => id)
-  )
-  const inFolderScanGroup = (groupId: string | null | undefined) =>
-    groupId && folderScanGroupIds.has(groupId) ? { inFolderScanGroup: true } : {}
   const sections: (S & TreeSection)[] = []
   const atDepth = (depth: number) => (depth > 0 ? { projectGroupDepth: depth } : {})
   const placements = new Map<string, GroupTreePlacement>()
@@ -131,7 +129,7 @@ export function planProjectGroupTree<S extends object>(args: {
         const key = getProjectGroupHeaderKey(group.id)
         placements.set(key, {
           ancestorKeys: [...groupPath],
-          rowView: { projectGroupDepth: depth + 1, ...inFolderScanGroup(group.id) }
+          rowView: { projectGroupDepth: depth + 1 }
         })
         groupPath.push(key)
         const rows = args.folderRowsByGroupId.get(group.id) ?? []
@@ -146,13 +144,11 @@ export function planProjectGroupTree<S extends object>(args: {
       projects: (entries, depth) => {
         groupPath.length = depth
         for (const entry of entries) {
-          // A root project sits in no group, so it lists as it would without groups.
-          if (depth > 0) {
-            placements.set(entry[0], {
-              ancestorKeys: [...groupPath],
-              rowView: { ...atDepth(depth), ...inFolderScanGroup(entry[1].repo?.projectGroupId) }
-            })
-          }
+          // Section rows are children of the project header and sit one level under it.
+          placements.set(entry[0], {
+            ancestorKeys: [...groupPath],
+            rowView: { ...atDepth(depth + 1) }
+          })
           sections.push({ ...args.projectSection(entry), ...atDepth(depth) })
         }
       }
