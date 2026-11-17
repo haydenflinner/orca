@@ -1855,18 +1855,34 @@ html.native-shell .app-layout {
 }
 
 /* The composer the user types into gets the strongest tint so the active agent is unmistakable. */
-.pane[data-agent-tint] [data-native-chat-composer-scope] {
+.pane[data-agent-tint] [data-composer-field] {
   background-image: linear-gradient(
-    color-mix(in srgb, hsl(var(--agent-tint)) 12%, transparent),
-    color-mix(in srgb, hsl(var(--agent-tint)) 12%, transparent)
+    color-mix(in srgb, hsl(var(--agent-tint)) 9%, transparent),
+    color-mix(in srgb, hsl(var(--agent-tint)) 9%, transparent)
   );
 }
 
-.dark .pane[data-agent-tint] [data-native-chat-composer-scope] {
+.dark .pane[data-agent-tint] [data-composer-field] {
   background-image: linear-gradient(
-    color-mix(in srgb, hsl(var(--agent-tint)) 18%, transparent),
-    color-mix(in srgb, hsl(var(--agent-tint)) 18%, transparent)
+    color-mix(in srgb, hsl(var(--agent-tint)) 13%, transparent),
+    color-mix(in srgb, hsl(var(--agent-tint)) 13%, transparent)
   );
+}
+
+.pane[data-agent-tint] .native-chat-composer-card {
+  background-image: linear-gradient(
+    color-mix(in srgb, hsl(var(--agent-tint)) 14%, transparent),
+    color-mix(in srgb, hsl(var(--agent-tint)) 14%, transparent)
+  );
+  border-color: color-mix(in srgb, hsl(var(--agent-tint)) 45%, var(--chat-composer-border));
+}
+
+.dark .pane[data-agent-tint] .native-chat-composer-card {
+  background-image: linear-gradient(
+    color-mix(in srgb, hsl(var(--agent-tint)) 20%, transparent),
+    color-mix(in srgb, hsl(var(--agent-tint)) 20%, transparent)
+  );
+  border-color: color-mix(in srgb, hsl(var(--agent-tint)) 55%, var(--chat-composer-border));
 }
 
 /* Light sidebar-accent/40 disappears on the panel; lift nested hover without overpowering workspace cards. */
