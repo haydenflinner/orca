@@ -43,6 +43,7 @@ export function renderWorktreeSectionHeaderRow(
     isActiveStickyHeader: boolean
     hasStickyHost: boolean
     hasHeaderTopSpacing: boolean
+    sectionBanded: boolean
     measureVirtualRowElement: (element: HTMLDivElement | null) => void
   },
   t?: Translate
@@ -165,6 +166,7 @@ export function renderWorktreeSectionHeaderRow(
       ref={args.measureVirtualRowElement}
       className={cn(
         'left-0 right-0',
+        args.sectionBanded && !isActiveStickyHeader && 'worktree-section-band',
         // Why: drop the inter-group spacer once the header pins so it sits flush at top (see getActiveStickyHeaderIndexForScroll).
         args.hasHeaderTopSpacing && !isActiveStickyHeader && 'pt-1',
         isActiveStickyHeader
