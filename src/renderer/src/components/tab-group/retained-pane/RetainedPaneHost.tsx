@@ -1,5 +1,6 @@
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { SYNC_FIT_PANES_EVENT } from '@/constants/terminal'
+import { agentTintStyle, type AgentTint } from '@/lib/agent-tint/agent-tint'
 import { tabGroupBodyAnchorName } from './tab-group-body-anchor'
 import { subscribeTabGroupBodyRect, type TabGroupBodyRect } from './tab-group-body-geometry'
 import { UNFOCUSED_SPLIT_GROUP_OPACITY } from '../panel/split-group-dim'
@@ -30,7 +31,7 @@ type RetainedPaneHostProps = {
   children: React.ReactNode
   'data-terminal-overlay-tab-id'?: string
   'data-structured-agent-session-overlay-tab-id'?: string
-  'data-agent-tint'?: number
+  agentTint?: AgentTint
 }
 
 export function RetainedPaneHost({
@@ -39,6 +40,7 @@ export function RetainedPaneHost({
   measureWhileHidden = false,
   fitTerminal = false,
   dimmed = false,
+  agentTint,
   onFocusOwningGroup,
   children,
   ...identity
@@ -97,6 +99,7 @@ export function RetainedPaneHost({
   }, [anchorName, fitTerminal, isVisible, measuredFallbackRect])
 
   const visibleOpacity = dimmed ? UNFOCUSED_SPLIT_GROUP_OPACITY : 1
+  const tintVars = useMemo(() => (agentTint ? agentTintStyle(agentTint) : undefined), [agentTint])
   const style: React.CSSProperties = useMemo(
     () =>
       anchorName && shouldUseCssAnchorPositioning()
@@ -110,7 +113,8 @@ export function RetainedPaneHost({
             height: `anchor-size(${anchorName} height, 0px)`,
             display: isVisible || measureWhileHidden ? 'flex' : 'none',
             opacity: isVisible ? visibleOpacity : 0,
-            pointerEvents: isVisible ? 'auto' : 'none'
+            pointerEvents: isVisible ? 'auto' : 'none',
+            ...tintVars
           }
         : anchorName
           ? {
@@ -122,7 +126,8 @@ export function RetainedPaneHost({
               height: measuredFallbackRect?.height ?? 'calc(100% - 32px)',
               display: isVisible || measureWhileHidden ? 'flex' : 'none',
               opacity: isVisible ? visibleOpacity : 0,
-              pointerEvents: isVisible ? 'auto' : 'none'
+              pointerEvents: isVisible ? 'auto' : 'none',
+              ...tintVars
             }
           : {
               position: 'absolute',
@@ -131,9 +136,10 @@ export function RetainedPaneHost({
               width: 0,
               height: 0,
               display: 'none',
-              pointerEvents: 'none'
+              pointerEvents: 'none',
+              ...tintVars
             },
-    [anchorName, isVisible, measuredFallbackRect, measureWhileHidden, visibleOpacity]
+    [anchorName, isVisible, measuredFallbackRect, measureWhileHidden, visibleOpacity, tintVars]
   )
   const focusGroup = useCallback(() => {
     if (groupId !== undefined && onFocusOwningGroup) {
@@ -148,6 +154,7 @@ export function RetainedPaneHost({
       // Pane-local layers cannot compete with app notifications or escape their split rectangle.
       className="isolate z-10 min-h-0 min-w-0 overflow-hidden"
       data-retained-pane-host=""
+      data-agent-tint={agentTint?.h}
       {...identity}
       inert={!isVisible}
       aria-hidden={!isVisible}

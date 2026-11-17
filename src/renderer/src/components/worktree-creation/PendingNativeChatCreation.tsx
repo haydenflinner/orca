@@ -1,7 +1,7 @@
 import React from 'react'
 import { useAppStore } from '@/store/index'
 import { cn } from '@/lib/class-names'
-import { agentTintIndex } from '@/lib/agent-tint/agent-tint'
+import { agentTintStyle, preferredAgentTint } from '@/lib/agent-tint/agent-tint'
 import { translate } from '@/i18n/i18n'
 import { useTranslate, type Translate } from '@/i18n/use-translate'
 import { retryBackgroundWorktreeCreation } from '@/lib/workspace/creation/worktree-creation-flow'
@@ -79,6 +79,7 @@ export default function PendingNativeChatCreation({
   })
   const options = usePendingNativeChatOptions(entry, executionHostId, sourceWorktreeId)
   const appearanceStyle = useNativeChatStoreAppearanceStyle()
+  const tint = preferredAgentTint(creationId)
   const composerRef = React.useRef<NativeChatComposerHandle>(null)
   const { composerError, reportComposerError } = useNativeChatComposerError(NO_COMMAND_CAUSES)
   const status = entry?.status
@@ -209,9 +210,9 @@ export default function PendingNativeChatCreation({
       />
       <div
         data-native-chat-root="true"
-        data-agent-tint={agentTintIndex(creationId)}
+        data-agent-tint={tint.h}
         className={cn(NATIVE_CHAT_APPEARANCE_ROOT_CLASS, 'flex min-h-0 w-full flex-1 flex-col')}
-        style={appearanceStyle}
+        style={{ ...appearanceStyle, ...agentTintStyle(tint) }}
         data-native-chat-scheme={appearanceStyle.colorScheme}
       >
         <div className="relative flex min-h-0 flex-1 flex-col bg-chat-canvas">

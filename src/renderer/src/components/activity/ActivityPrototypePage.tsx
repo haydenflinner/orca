@@ -13,6 +13,7 @@ import { useAgentPaneThreads } from './threads/use-agent-pane-threads'
 import { handleActivityFilterFocusShortcut } from './thread-list/activity-filter-focus-shortcut'
 import { hasActivityThreadWorkspace } from './thread-list/activity-thread-actions'
 import { useActivityThreadActionBindings } from './thread-list/use-activity-thread-action-bindings'
+import { AgentTintProvider } from '@/lib/agent-tint/agent-tint-context'
 import { ActivityThreadListPane } from './thread-list/activity-thread-list-pane'
 import { AGENTS_TWO_COLUMN_MIN_WIDTH } from './thread-list/activity-thread-virtual-items'
 import { ActivityThreadDetailPane } from './terminal-portal/activity-thread-detail-pane'
@@ -320,38 +321,42 @@ export default function ActivityPrototypePage(): React.JSX.Element {
   return (
     <div ref={setActivityPageRef} className="flex h-full min-h-0 flex-col bg-background pb-3">
       <main className="flex min-h-0 flex-1 overflow-hidden">
-        <ActivityThreadListPane
-          threadListRef={threadListRef}
-          threadListWidth={threadListWidth}
-          activityFilterInputRef={activityFilterInputRef}
-          query={query}
-          onQueryChange={setQuery}
-          groupBy={groupBy}
-          onGroupByChange={setGroupBy}
-          readFilter={readFilter}
-          onReadFilterChange={setReadFilter}
-          compactMode={compactMode}
-          showChildAgents={showChildAgents}
-          hasUnreadThreads={hasUnreadThreads}
-          onCompactModeChange={setCompactMode}
-          onShowChildAgentsChange={setShowChildAgents}
-          onMarkAllThreadsRead={markAllThreadsRead}
-          hasCompletedThreads={hasCompletedThreads}
-          onClearCompleted={handleClearCompleted}
-          columns={twoColumn && threadListWidth >= AGENTS_TWO_COLUMN_MIN_WIDTH ? 2 : 1}
-          visibleThreadGroups={visibleThreadGroups}
-          visibleThreadCount={visibleThreads.length}
-          selectedPaneKey={selectedThread?.paneKey ?? null}
-          onSelectThread={selectThread}
-          onJumpToWorkspace={jumpToWorkspace}
-          onMarkThreadRead={markThreadRead}
-          onMarkThreadUnread={markThreadUnread}
-          onMarkThreadsRead={markThreadsRead}
-          onMarkThreadsUnread={markThreadsUnread}
-          canJumpToWorkspace={canJumpToWorkspace}
-          isThreadListResizing={isThreadListResizing}
-          onResizeStart={onResizeStart}
-        />
+        <AgentTintProvider
+          keys={visibleThreadGroups.flatMap((g) => g.threads.map((t) => t.paneKey))}
+        >
+          <ActivityThreadListPane
+            threadListRef={threadListRef}
+            threadListWidth={threadListWidth}
+            activityFilterInputRef={activityFilterInputRef}
+            query={query}
+            onQueryChange={setQuery}
+            groupBy={groupBy}
+            onGroupByChange={setGroupBy}
+            readFilter={readFilter}
+            onReadFilterChange={setReadFilter}
+            compactMode={compactMode}
+            showChildAgents={showChildAgents}
+            hasUnreadThreads={hasUnreadThreads}
+            onCompactModeChange={setCompactMode}
+            onShowChildAgentsChange={setShowChildAgents}
+            onMarkAllThreadsRead={markAllThreadsRead}
+            hasCompletedThreads={hasCompletedThreads}
+            onClearCompleted={handleClearCompleted}
+            columns={twoColumn && threadListWidth >= AGENTS_TWO_COLUMN_MIN_WIDTH ? 2 : 1}
+            visibleThreadGroups={visibleThreadGroups}
+            visibleThreadCount={visibleThreads.length}
+            selectedPaneKey={selectedThread?.paneKey ?? null}
+            onSelectThread={selectThread}
+            onJumpToWorkspace={jumpToWorkspace}
+            onMarkThreadRead={markThreadRead}
+            onMarkThreadUnread={markThreadUnread}
+            onMarkThreadsRead={markThreadsRead}
+            onMarkThreadsUnread={markThreadsUnread}
+            canJumpToWorkspace={canJumpToWorkspace}
+            isThreadListResizing={isThreadListResizing}
+            onResizeStart={onResizeStart}
+          />
+        </AgentTintProvider>
         <ActivityThreadDetailPane
           selectedThread={selectedThread}
           selectedHasLiveTab={Boolean(selectedHasLiveTab)}

@@ -9,7 +9,7 @@ import {
   type ITerminalOptions
 } from '@xterm/xterm'
 
-import { agentTintIndex } from '../agent-tint/agent-tint'
+import { agentTintStyle, preferredAgentTint } from '../agent-tint/agent-tint'
 import { createWrappedTerminalHttpLinkProvider } from '../../components/terminal-pane/links/http/wrapped-terminal-http-link-provider'
 import { TERMINAL_HTTP_URL_REGEX } from '../../../../shared/terminal/links/terminal-http-url-extraction'
 import type { TerminalLeafId } from '../../../../shared/workspace-layout/stable-pane-id'
@@ -41,7 +41,11 @@ export function createPaneDOM(
   container.className = 'pane agent-tint-surface'
   container.dataset.paneId = String(id)
   container.dataset.leafId = leafId
-  container.dataset.agentTint = String(agentTintIndex(leafId))
+  const tint = preferredAgentTint(leafId)
+  container.dataset.agentTint = String(tint.h)
+  for (const [name, value] of Object.entries(agentTintStyle(tint))) {
+    container.style.setProperty(name, String(value))
+  }
 
   // Why: CSS owns baseline xterm geometry so title offsets do not race safeFit().
   const xtermContainer = document.createElement('div')

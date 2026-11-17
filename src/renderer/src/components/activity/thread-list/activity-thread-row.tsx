@@ -14,7 +14,8 @@ import { PaletteRowShortcutBadge } from '@/components/worktree-jump/rows/worktre
 import { EventTime, ThreadAgentStateIndicator } from './activity-thread-controls'
 import { ActivityThreadHoverCard } from '../thread-preview/activity-thread-hover-card'
 import { activityThreadRowCopy } from '../threads/activity-thread-presentation'
-import { agentTintIndex } from '@/lib/agent-tint/agent-tint'
+import { agentTintStyle } from '@/lib/agent-tint/agent-tint'
+import { useAgentTint } from '@/lib/agent-tint/agent-tint-context'
 import type { AgentPaneThread } from '../threads/activity-thread-types'
 import type { ActivityThreadClickEvent } from './use-activity-thread-selection'
 
@@ -99,6 +100,7 @@ export const ActivityThreadRow = React.memo(function ActivityThreadRow({
   useUiLanguageRevision()
   const { taskTitle, statusLine, statusKind, needsAttention, workspaceLabel } =
     activityThreadRowCopy(thread, t)
+  const tint = useAgentTint(thread.paneKey)
   const showMarkdownStatus = statusKind === 'message'
   const agentLabel = formatAgentTypeLabel(thread.agentType)
 
@@ -115,7 +117,8 @@ export const ActivityThreadRow = React.memo(function ActivityThreadRow({
         data-worktree-card-surface="true"
         data-worktree-card-active={selected ? 'primary' : undefined}
         data-worktree-card-selected={multiSelected || undefined}
-        data-agent-tint={agentTintIndex(thread.paneKey)}
+        data-agent-tint={tint.h}
+        style={agentTintStyle(tint)}
         onClick={(event) => onSelect(thread, event)}
         // Focus opens the thread so Tab and arrow navigation scan agents without a confirm key.
         onFocus={() => onOpen?.(thread)}

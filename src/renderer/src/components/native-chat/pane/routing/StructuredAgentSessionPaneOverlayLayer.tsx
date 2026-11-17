@@ -9,7 +9,7 @@ import {
 } from '@/runtime/native-chat/session-ownership/structured-agent-session-owner'
 import { ActivityPortalContainer } from '@/components/ui/activity-portal-container'
 import { RetainedPaneHost } from '../../../tab-group/retained-pane/RetainedPaneHost'
-import { agentTintIndex } from '@/lib/agent-tint/agent-tint'
+import { AgentTintProvider, useAgentTint } from '@/lib/agent-tint/agent-tint-context'
 import { structuredAgentSessionPaneKey } from '../../../../../../shared/agent-session/view/structured-agent-session-projection'
 import NativeChatView from '../../NativeChatView'
 import { NativeChatComposerEditorOwner } from '../../composer/editor/native-chat-composer-editor-owner'
@@ -46,6 +46,7 @@ const StructuredAgentSessionOverlaySlot = memo(function StructuredAgentSessionOv
   // Resolve from the tab’s recorded host because workspace ids can collide across hosts.
   const owner = useAppStore((state) => structuredAgentSessionOwnerForTab(state, tab))
   const target = useMemo(() => structuredAgentSessionTargetForHost(owner), [owner])
+  const tint = useAgentTint(structuredAgentSessionPaneKey(tab.id, tab.entityId))
   const effectsConnected = isActive || preparingHandoff
   const backdropActive = useWindowBackdropActive()
   if (!target) {
@@ -58,7 +59,7 @@ const StructuredAgentSessionOverlaySlot = memo(function StructuredAgentSessionOv
       // Why not over a backdrop: dimming the translucent chat also dims its text.
       dimmed={hasSplitGroups && !isFocusedGroup && !backdropActive}
       data-structured-agent-session-overlay-tab-id={tab.id}
-      data-agent-tint={agentTintIndex(structuredAgentSessionPaneKey(tab.id, tab.entityId))}
+      agentTint={tint}
       onFocusOwningGroup={onFocusOwningGroup}
     >
       <NativeChatPaneLifetime key={`${owner}:${tab.entityId}`} isVisible={effectsConnected}>
@@ -139,9 +140,13 @@ const StructuredAgentSessionPaneOverlayLayer = memo(
     if (newlyShownCount > 0 || mountedTabs.length - newlyShownCount < shownTabIds.size) {
       setShownTabIds(new Set(mountedTabs.map((tab) => tab.id)))
     }
+    const tintKeys = useMemo(
+      () => structuredTabs.map((tab) => structuredAgentSessionPaneKey(tab.id, tab.entityId)),
+      [structuredTabs]
+    )
 
     return (
-      <>
+      <AgentTintProvider keys={tintKeys}>
         {mountedTabs.map((tab) => (
           <StructuredAgentSessionOverlaySlot
             key={tab.id}
@@ -158,7 +163,7 @@ const StructuredAgentSessionPaneOverlayLayer = memo(
             onFocusOwningGroup={focusOwningGroup}
           />
         ))}
-      </>
+      </AgentTintProvider>
     )
   }
 )

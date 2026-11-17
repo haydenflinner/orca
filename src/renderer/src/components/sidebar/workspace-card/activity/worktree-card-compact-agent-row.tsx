@@ -10,7 +10,8 @@ import type { DashboardAgentRow as DashboardAgentRowData } from '@/components/da
 import { AgentTypeIcon } from '@/components/agent/icons/agent-type-icon'
 import { formatAgentTypeLabel } from '../../../../../../shared/agent-status/presentation/agent-type-label'
 import { cn } from '@/lib/class-names'
-import { agentTintIndex } from '@/lib/agent-tint/agent-tint'
+import { agentTintStyle } from '@/lib/agent-tint/agent-tint'
+import { useAgentTint } from '@/lib/agent-tint/agent-tint-context'
 import { viewClaudeAgentFromRow } from '@/lib/agent-session/navigation/claude-agent-row-view'
 import { useClaudeAgentRowView } from '@/components/dashboard/rows/use-claude-agent-row-view'
 import './worktree-card-agent-summary'
@@ -138,6 +139,7 @@ export const CompactAgentRow = React.memo(function CompactAgentRow({
 }: CompactAgentRowProps) {
   const t = useTranslate()
   const view = useClaudeAgentRowView(agent)
+  const tint = useAgentTint(agent.paneKey)
   const highlighted = view ? view.current && view.focused : isFocusedPane
   const hasChildDisclosure =
     typeof childAgentCount === 'number' &&
@@ -324,7 +326,8 @@ export const CompactAgentRow = React.memo(function CompactAgentRow({
       onPointerDown={(e) => e.stopPropagation()}
       onDragStart={(e) => e.stopPropagation()}
       data-focused-agent-pane={highlighted ? 'true' : undefined}
-      data-agent-tint={agentTintIndex(agent.paneKey)}
+      data-agent-tint={tint.h}
+      style={agentTintStyle(tint)}
       data-current={view?.current ? 'true' : undefined}
       aria-current={view?.current ? 'true' : undefined}
       aria-description={parentConversationDescription}

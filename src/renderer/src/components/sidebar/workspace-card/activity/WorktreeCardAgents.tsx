@@ -1,24 +1,22 @@
-import type { BranchContext } from './worktree-agent-branch-context'
 import React, { useCallback, useLayoutEffect, useMemo, useRef } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { useAppStore } from '@/store/index'
-import DashboardAgentRow from '@/components/dashboard/DashboardAgentRow'
 import { useNow } from '@/lib/window-activity/use-now'
 import { deriveRunningAgentSendTargets } from '@/lib/agent-session/messaging/running-agent-targets'
 import {
   selectSendTargetControlInputs,
   selectSendTargetInputs
 } from './worktree-card-send-target-inputs'
-import { useAgentPresentation, useWorktreeAgentRow } from './useWorktreeAgentRows'
+import { useAgentPresentation } from './useWorktreeAgentRows'
 import { useHostRootKeys } from './use-worktree-agent-host-roots'
 import { KeyedSummary } from './worktree-card-agent-keyed-summary'
+import { AgentBranches } from './worktree-card-agent-branches'
 import type { ExecutionHostId } from '../../../../../../shared/execution-host/execution-host'
 import { useWorktreeAgentDisplay } from './use-worktree-agent-display'
 import { cn } from '@/lib/class-names'
 import { recomputeOn } from '@/lib/recompute-on'
 import { useFocusedAgentPaneKey } from './focused-agent-row-highlight'
 import { CompactAgentExpansion } from './worktree-card-compact-agents'
-import { CompactAgentRow } from './worktree-card-compact-agent-row'
 import { revealCompactAgentCard } from '../../worktree-list/navigation/worktree-sidebar-reveal'
 import {
   COMPACT_ROOT_LIST_AUTO_EXPAND_MAX,
@@ -28,10 +26,8 @@ import { useTranslate } from '@/i18n/use-translate'
 import { agentSendDisabledReasonLabel } from '@/lib/agent-session/messaging/agent-send-disabled-reason-label'
 import { useUiLanguageRevision } from '@/i18n/use-ui-language-revision'
 import { useWorktreeAgentActivation } from './use-worktree-agent-activation'
-import { opensClaudeParentConversation } from '@/lib/agent-session/navigation/claude-agent-row-view'
-import { IdleChildAgentGroupRow } from './worktree-card-idle-child-agents'
-import type { AgentChildren } from '@/store/slices/agent-status/projection/agent-row-display-model'
-import type { DashboardAgentRow as AgentRow } from '@/components/dashboard/rows/dashboard-agent-row'
+
+
 
 const stopBubble = (event: React.SyntheticEvent) => event.stopPropagation()
 type Props = {
@@ -205,193 +201,3 @@ function WorktreeCardAgentsBody({
     </div>
   )
 }
-const AgentBranches = React.memo(function AgentBranches({
-  keysToRender,
-  context,
-  timerActive,
-  root = false
-}: {
-  keysToRender: readonly string[]
-  context: BranchContext
-  timerActive: boolean
-  root?: boolean
-}) {
-  return (
-    <>
-      {keysToRender.map((key) => (
-        <AgentBranch
-          key={key}
-          paneKey={key}
-          context={context}
-          timerActive={timerActive}
-          root={root}
-        />
-      ))}
-    </>
-  )
-})
-const AgentBranch = React.memo(function AgentBranch({
-  paneKey,
-  context,
-  timerActive,
-  root
-}: {
-  paneKey: string
-  context: BranchContext
-  timerActive: boolean
-  root: boolean
-}) {
-  const row = useWorktreeAgentRow(paneKey)
-  const children = useAgentPresentation(
-    `children\0${paneKey}`,
-    useCallback((p) => p.display.children(paneKey), [paneKey])
-  )
-  const focusedDescendant = useAgentPresentation(
-    `children\0${paneKey}`,
-    useCallback(
-      (p) => {
-        const seen = new Set<string>()
-        for (
-          let key = context.focusedPaneKey;
-          key && !seen.has(key);
-          key = p.row(key)?.lineage?.parentPaneKey ?? null
-        ) {
-          if (key === paneKey) {
-            return true
-          }
-          seen.add(key)
-        }
-        return false
-      },
-      [context.focusedPaneKey, paneKey]
-    )
-  )
-  const acknowledgedAt = useAppStore((s) => s.acknowledgedAgentsByPaneKey[paneKey] ?? 0)
-  const t = useTranslate()
-  if (!row) {
-    return null
-  }
-  const compact = context.agentActivityDisplayMode === 'compact',
-    expanded = Boolean(context.targets) || context.expansion.expandedLineageParents.has(paneKey)
-  const hasChildren = children.keys.length > 0,
-    idleExpanded = context.expansion.expandedIdleChildGroups.has(paneKey)
-  const target = context.targets
-    ? (context.targets.get(paneKey) ?? {
-        status: 'disabled' as const,
-        disabledReason: t(
-          'auto.components.sidebar.WorktreeCardAgents.agentUnavailable',
-          'Agent is not available'
-        )
-      })
-    : undefined
-  const common = {
-    agent: row,
-    showModel: context.showAgentModels,
-    now: context.now,
-    isUnvisited: row.rowSource === 'live' && acknowledgedAt < row.entry.stateStartedAt,
-    onActivate: context.onActivate,
-    childAgentCount: hasChildren ? children.keys.length : undefined,
-    childAgentsExpanded: expanded,
-    collapsedChildAgentsState: hasChildren && !expanded ? children.signal : undefined,
-    onToggleChildAgents:
-      hasChildren && !context.targets ? () => context.toggleLineage(paneKey) : undefined,
-    isFocusedPane: paneKey === context.focusedPaneKey || (!expanded && focusedDescendant),
-    sendTargetStatus: target?.status,
-    sendTargetDisabledReason: target?.disabledReason,
-    onSendTargetClick: context.targets ? context.onSend : undefined
-  }
-  const childList = (
-    <AgentBranchChildren
-      row={row}
-      childState={children}
-      context={context}
-      timerActive={timerActive && expanded}
-      idleExpanded={idleExpanded}
-    />
-  )
-  return (
-    <div className={compact ? cn('min-w-0', root && 'ms-2') : undefined}>
-      {compact ? (
-        <CompactAgentRow
-          {...common}
-          parentConversationDescription={
-            opensClaudeParentConversation(row)
-              ? t('auto.lib.claudeAgentRowView.openParentConversation', 'Open parent conversation')
-              : undefined
-          }
-          cacheTimerActive={timerActive}
-        />
-      ) : (
-        <DashboardAgentRow
-          {...common}
-          onDismiss={context.onDismiss}
-          stateDotSize="sm"
-          hideExpand
-          hideLineageConnectors
-        />
-      )}
-      {hasChildren ? (
-        compact ? (
-          <CompactAgentExpansion expanded={expanded}>
-            <div className="worktree-agent-lineage-children flex flex-col gap-0.5">{childList}</div>
-          </CompactAgentExpansion>
-        ) : expanded ? (
-          <div className="worktree-agent-lineage-children">{childList}</div>
-        ) : null
-      ) : null}
-    </div>
-  )
-})
-const AgentBranchChildren = React.memo(
-  function AgentBranchChildren({
-    row,
-    childState: children,
-    context,
-    timerActive,
-    idleExpanded
-  }: {
-    row: AgentRow
-    childState: AgentChildren
-    context: BranchContext
-    timerActive: boolean
-    idleExpanded: boolean
-  }) {
-    const compact = context.agentActivityDisplayMode === 'compact',
-      active = context.targets ? children.keys : children.active,
-      idle = context.targets ? [] : children.idle
-    return (
-      <>
-        <AgentBranches keysToRender={active} context={context} timerActive={timerActive} />
-        {idle.length > 0 ? (
-          <>
-            <IdleChildAgentGroupRow
-              count={idle.length}
-              expanded={idleExpanded}
-              onToggle={() => context.toggleIdle(row.paneKey)}
-              layout={compact ? 'compact' : 'full'}
-              ariaLevel={(row.lineage?.depth ?? 0) + 2}
-            />
-            {compact ? (
-              <CompactAgentExpansion expanded={idleExpanded}>
-                <AgentBranches
-                  keysToRender={idle}
-                  context={context}
-                  timerActive={timerActive && idleExpanded}
-                />
-              </CompactAgentExpansion>
-            ) : idleExpanded ? (
-              <AgentBranches keysToRender={idle} context={context} timerActive={timerActive} />
-            ) : null}
-          </>
-        ) : null}
-      </>
-    )
-  },
-  (before, after) =>
-    before.row.paneKey === after.row.paneKey &&
-    before.row.lineage === after.row.lineage &&
-    before.childState === after.childState &&
-    before.context === after.context &&
-    before.timerActive === after.timerActive &&
-    before.idleExpanded === after.idleExpanded
-)

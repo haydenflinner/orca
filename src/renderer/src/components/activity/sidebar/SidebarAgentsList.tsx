@@ -8,9 +8,10 @@ import { useAppStore } from '@/store'
 import { useTranslate } from '@/i18n/use-translate'
 import { hasActivityThreadWorkspace } from '@/components/activity/thread-list/activity-thread-actions'
 import { useActivityThreadActionBindings } from '@/components/activity/thread-list/use-activity-thread-action-bindings'
+import { AgentTintProvider } from '@/lib/agent-tint/agent-tint-context'
 import { ActivityThreadListPane } from '@/components/activity/thread-list/activity-thread-list-pane'
 import { subscribeAgentsListIndexJump } from '@/components/activity/agents-list-index-jump'
-import { AGENTS_TWO_COLUMN_MIN_WIDTH } from '@/components/activity/activity-thread-virtual-items'
+import { AGENTS_TWO_COLUMN_MIN_WIDTH } from '@/components/activity/thread-list/activity-thread-virtual-items'
 import { ActivityIndexHintsContext } from '@/components/activity/activity-index-hints-context'
 import { useShortcutKeyComboDetails } from '@/hooks/useShortcutLabel'
 import { useModifierHeldClass } from '../editor/rich-markdown/viewport/useModifierHeldClass'
@@ -296,41 +297,45 @@ function SidebarAgentsListBody({
         </div>
       ) : null}
       <ActivityIndexHintsContext.Provider value={indexHints}>
-        <ActivityThreadListPane
-          activityFilterInputRef={activityFilterInputRef}
-          query={query}
-          onQueryChange={setQuery}
-          groupBy={groupBy}
-          onGroupByChange={setGroupBy}
-          readFilter={readFilter}
-          onReadFilterChange={setReadFilter}
-          compactMode={compactMode}
-          showChildAgents={showChildAgents}
-          hasUnreadThreads={hasUnreadThreads}
-          onCompactModeChange={setCompactMode}
-          onShowChildAgentsChange={setShowChildAgents}
-          onMarkAllThreadsRead={markAllThreadsRead}
-          hasCompletedThreads={hasCompletedThreads}
-          onClearCompleted={handleClearCompleted}
-          columns={columns}
-          visibleThreadGroups={visibleThreadGroups}
-          visibleThreadCount={visibleThreads.length}
-          selectedPaneKey={effectiveSelectedPaneKey}
-          onSelectThread={selectThread}
-          onJumpToWorkspace={jumpToWorkspace}
-          onMarkThreadRead={markThreadRead}
-          onMarkThreadUnread={markThreadUnread}
-          onMarkThreadsRead={markThreadsRead}
-          onMarkThreadsUnread={markThreadsUnread}
-          canJumpToWorkspace={canJumpToWorkspace}
-          allowMarkUnreadWhenSelected
-          showJumpAction={false}
-          showFilterControls={false}
-          showOptionsMenu={false}
-          showInlineActions={false}
-          scrollTopRef={scrollTopRef}
-          threadListRef={threadListRef}
-        />
+        <AgentTintProvider
+          keys={visibleThreadGroups.flatMap((g) => g.threads.map((t) => t.paneKey))}
+        >
+          <ActivityThreadListPane
+            activityFilterInputRef={activityFilterInputRef}
+            query={query}
+            onQueryChange={setQuery}
+            groupBy={groupBy}
+            onGroupByChange={setGroupBy}
+            readFilter={readFilter}
+            onReadFilterChange={setReadFilter}
+            compactMode={compactMode}
+            showChildAgents={showChildAgents}
+            hasUnreadThreads={hasUnreadThreads}
+            onCompactModeChange={setCompactMode}
+            onShowChildAgentsChange={setShowChildAgents}
+            onMarkAllThreadsRead={markAllThreadsRead}
+            hasCompletedThreads={hasCompletedThreads}
+            onClearCompleted={handleClearCompleted}
+            columns={columns}
+            visibleThreadGroups={visibleThreadGroups}
+            visibleThreadCount={visibleThreads.length}
+            selectedPaneKey={effectiveSelectedPaneKey}
+            onSelectThread={selectThread}
+            onJumpToWorkspace={jumpToWorkspace}
+            onMarkThreadRead={markThreadRead}
+            onMarkThreadUnread={markThreadUnread}
+            onMarkThreadsRead={markThreadsRead}
+            onMarkThreadsUnread={markThreadsUnread}
+            canJumpToWorkspace={canJumpToWorkspace}
+            allowMarkUnreadWhenSelected
+            showJumpAction={false}
+            showFilterControls={false}
+            showOptionsMenu={false}
+            showInlineActions={false}
+            scrollTopRef={scrollTopRef}
+            threadListRef={threadListRef}
+          />
+        </AgentTintProvider>
       </ActivityIndexHintsContext.Provider>
       {optionsTarget
         ? createPortal(

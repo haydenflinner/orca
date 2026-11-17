@@ -1769,31 +1769,8 @@ html.native-shell .app-layout {
   background: var(--worktree-sidebar-band);
 }
 
-/* Per-agent identity hues; a deterministic slot tints agent cards and workspaces. */
-[data-agent-tint='0'] {
-  --agent-tint: 215 90% 60%;
-}
-[data-agent-tint='1'] {
-  --agent-tint: 160 60% 45%;
-}
-[data-agent-tint='2'] {
-  --agent-tint: 280 65% 62%;
-}
-[data-agent-tint='3'] {
-  --agent-tint: 25 85% 55%;
-}
-[data-agent-tint='4'] {
-  --agent-tint: 340 70% 58%;
-}
-[data-agent-tint='5'] {
-  --agent-tint: 190 75% 45%;
-}
-[data-agent-tint='6'] {
-  --agent-tint: 95 55% 45%;
-}
-[data-agent-tint='7'] {
-  --agent-tint: 45 90% 52%;
-}
+/* Per-agent identity hues arrive as an inline --agent-tint ("h s% l%") from agent-tint.ts;
+   [data-agent-tint] is only a scoping marker. */
 
 .agent-tint-card {
   background-image: linear-gradient(
@@ -1903,12 +1880,13 @@ html.native-shell .app-layout {
 }
 
 /* Light sidebar-accent/40 disappears on the panel; lift nested hover without overpowering workspace cards. */
+/* background-color so a hover never clears an agent-tint background-image. */
 .worktree-sidebar-card-hover:hover {
-  background: color-mix(in srgb, var(--sidebar-foreground) 4%, transparent);
+  background-color: color-mix(in srgb, var(--sidebar-foreground) 4%, transparent);
 }
 
 .dark .worktree-sidebar-card-hover:hover {
-  background: color-mix(in srgb, var(--sidebar-accent) 40%, transparent);
+  background-color: color-mix(in srgb, var(--sidebar-accent) 40%, transparent);
 }
 
 /* Why: one multi-selected look for every list on the card surface (workspaces and
@@ -1927,7 +1905,7 @@ html.native-shell .app-layout {
     --worktree-sidebar-active-border,
     color-mix(in srgb, var(--worktree-sidebar-border) 40%, transparent)
   );
-  background: var(
+  background-color: var(
     --worktree-sidebar-active,
     color-mix(in srgb, var(--worktree-sidebar-foreground) 8%, transparent)
   );
@@ -1940,11 +1918,20 @@ html.native-shell .app-layout {
     --worktree-sidebar-active-border,
     color-mix(in srgb, var(--worktree-sidebar-foreground) 18%, var(--worktree-sidebar-border))
   );
-  background: var(
+  background-color: var(
     --worktree-sidebar-active,
     color-mix(in srgb, var(--worktree-sidebar-foreground) 10%, transparent)
   );
   box-shadow: 0 1px 2px color-mix(in srgb, var(--worktree-sidebar-foreground) 3%, transparent);
+}
+
+/* Selection paints over the tint wash; the hue answers to the border instead. */
+[data-worktree-card-surface][data-agent-tint][data-worktree-card-active='primary'] {
+  border-color: color-mix(in srgb, hsl(var(--agent-tint)) 55%, var(--worktree-sidebar-border));
+}
+
+.dark [data-worktree-card-surface][data-agent-tint][data-worktree-card-active='primary'] {
+  border-color: color-mix(in srgb, hsl(var(--agent-tint)) 65%, var(--worktree-sidebar-border));
 }
 
 /* #15971: the wash matches the pill's fill, so its border carries the shape. A neutral sidebar tint
@@ -1963,21 +1950,21 @@ html.native-shell .app-layout {
 [data-worktree-family-segment='secondary'],
 [data-worktree-card-surface][data-worktree-card-active='secondary'] {
   border-color: color-mix(in srgb, var(--sidebar-ring) 25%, transparent);
-  background: color-mix(in srgb, var(--sidebar-accent) 45%, transparent);
+  background-color: color-mix(in srgb, var(--sidebar-accent) 45%, transparent);
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--sidebar-ring) 15%, transparent);
 }
 
 .dark [data-worktree-family-segment='secondary'],
 .dark [data-worktree-card-surface][data-worktree-card-active='secondary'] {
   border-color: color-mix(in srgb, var(--sidebar-ring) 28%, transparent);
-  background: color-mix(in srgb, var(--sidebar-accent) 34%, transparent);
+  background-color: color-mix(in srgb, var(--sidebar-accent) 34%, transparent);
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--sidebar-ring) 18%, transparent);
 }
 
 /* Family paint owns the surface in both themes, including secondary occurrences. */
 .worktree-sidebar-family-root [data-worktree-card-surface][data-worktree-card-active],
 .dark .worktree-sidebar-family-root [data-worktree-card-surface][data-worktree-card-active] {
-  background: transparent;
+  background-color: transparent;
   border-color: transparent;
   box-shadow: none;
 }
@@ -2005,17 +1992,27 @@ html.native-shell .app-layout {
   --border: color-mix(in oklab, var(--worktree-sidebar-foreground) 5%, var(--worktree-sidebar));
 }
 
+/* background-color so hover/focus never clears the agent-tint background-image. */
 .worktree-agent-row-hover:hover {
-  background: var(--worktree-sidebar-accent);
+  background-color: var(--worktree-sidebar-accent);
 }
 
 .worktree-agent-row-hover[data-focused-agent-pane='true'] {
   /* Mix sidebar-foreground into faint light-mode accent, retaining enough contrast for muted timestamps. */
-  background: color-mix(in srgb, var(--sidebar-foreground) 12%, var(--sidebar-accent));
+  background-color: color-mix(in srgb, var(--sidebar-foreground) 12%, var(--sidebar-accent));
 }
 
 .dark .worktree-agent-row-hover[data-focused-agent-pane='true'] {
-  background: color-mix(in srgb, var(--accent) 70%, transparent);
+  background-color: color-mix(in srgb, var(--accent) 70%, transparent);
+}
+
+/* A focused agent row keeps its fill; the ring carries the selection cue in the agent's hue. */
+.worktree-agent-row-hover[data-agent-tint][data-focused-agent-pane='true'] {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, hsl(var(--agent-tint)) 50%, transparent);
+}
+
+.dark .worktree-agent-row-hover[data-agent-tint][data-focused-agent-pane='true'] {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, hsl(var(--agent-tint)) 62%, transparent);
 }
 
 /* Why: one-shot sidebar education cards need stronger separation than
@@ -2170,35 +2167,35 @@ html.native-shell .app-layout {
 .worktree-agent-lineage-parent-row {
   /* Why: inline orchestration trees have two chevron levels; the manager row
      needs a structural cue that is quieter than the workspace card chrome. */
-  background: color-mix(in srgb, var(--sidebar-foreground) 3%, var(--sidebar));
+  background-color: color-mix(in srgb, var(--sidebar-foreground) 3%, var(--sidebar));
   box-shadow:
     inset 2px 0 0 color-mix(in srgb, var(--sidebar-foreground) 38%, transparent),
     inset 0 0 0 1px color-mix(in srgb, var(--sidebar-foreground) 10%, transparent);
 }
 
 .worktree-agent-lineage-parent-row.worktree-agent-row-hover:hover {
-  background: color-mix(in srgb, var(--sidebar-foreground) 6%, var(--sidebar));
+  background-color: color-mix(in srgb, var(--sidebar-foreground) 6%, var(--sidebar));
 }
 
 .dark .worktree-agent-lineage-parent-row {
-  background: color-mix(in srgb, var(--accent) 22%, var(--sidebar));
+  background-color: color-mix(in srgb, var(--accent) 22%, var(--sidebar));
   box-shadow:
     inset 2px 0 0 color-mix(in srgb, var(--accent) 58%, transparent),
     inset 0 0 0 1px color-mix(in srgb, var(--accent) 22%, transparent);
 }
 
 .dark .worktree-agent-lineage-parent-row.worktree-agent-row-hover:hover {
-  background: color-mix(in srgb, var(--accent) 30%, var(--sidebar));
+  background-color: color-mix(in srgb, var(--accent) 30%, var(--sidebar));
 }
 
 .worktree-agent-lineage-child-row {
   position: relative;
-  background: color-mix(in srgb, var(--sidebar) 74%, var(--background));
+  background-color: color-mix(in srgb, var(--sidebar) 74%, var(--background));
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--sidebar-foreground) 7%, transparent);
 }
 
 .worktree-agent-lineage-child-row.worktree-agent-row-hover:hover {
-  background: color-mix(in srgb, var(--sidebar-foreground) 4%, var(--sidebar));
+  background-color: color-mix(in srgb, var(--sidebar-foreground) 4%, var(--sidebar));
 }
 
 .worktree-agent-lineage-child-row::before {
@@ -2211,12 +2208,12 @@ html.native-shell .app-layout {
 }
 
 .dark .worktree-agent-lineage-child-row {
-  background: color-mix(in srgb, var(--accent) 10%, var(--sidebar));
+  background-color: color-mix(in srgb, var(--accent) 10%, var(--sidebar));
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 16%, transparent);
 }
 
 .dark .worktree-agent-lineage-child-row.worktree-agent-row-hover:hover {
-  background: color-mix(in srgb, var(--accent) 18%, var(--sidebar));
+  background-color: color-mix(in srgb, var(--accent) 18%, var(--sidebar));
 }
 
 .dark .worktree-agent-lineage-child-row::before {
