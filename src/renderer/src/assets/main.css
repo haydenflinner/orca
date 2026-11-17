@@ -1797,45 +1797,75 @@ html.native-shell .app-layout {
 
 .agent-tint-card {
   background-image: linear-gradient(
-    color-mix(in srgb, hsl(var(--agent-tint)) 7%, transparent),
-    color-mix(in srgb, hsl(var(--agent-tint)) 7%, transparent)
+    color-mix(in srgb, hsl(var(--agent-tint)) 12%, transparent),
+    color-mix(in srgb, hsl(var(--agent-tint)) 12%, transparent)
   );
-  border-color: color-mix(in srgb, hsl(var(--agent-tint)) 35%, transparent);
+  border-color: color-mix(in srgb, hsl(var(--agent-tint)) 45%, transparent);
 }
 
 .dark .agent-tint-card {
   background-image: linear-gradient(
-    color-mix(in srgb, hsl(var(--agent-tint)) 11%, transparent),
-    color-mix(in srgb, hsl(var(--agent-tint)) 11%, transparent)
+    color-mix(in srgb, hsl(var(--agent-tint)) 18%, transparent),
+    color-mix(in srgb, hsl(var(--agent-tint)) 18%, transparent)
+  );
+}
+
+/* Whole-row fill for compact agent rows in the worktree tree. */
+.agent-tint-fill {
+  background-image: linear-gradient(
+    color-mix(in srgb, hsl(var(--agent-tint)) 10%, transparent),
+    color-mix(in srgb, hsl(var(--agent-tint)) 10%, transparent)
+  );
+}
+
+.dark .agent-tint-fill {
+  background-image: linear-gradient(
+    color-mix(in srgb, hsl(var(--agent-tint)) 16%, transparent),
+    color-mix(in srgb, hsl(var(--agent-tint)) 16%, transparent)
   );
 }
 
 .agent-tint-surface {
   background-image: linear-gradient(
-    color-mix(in srgb, hsl(var(--agent-tint)) 4%, transparent),
-    color-mix(in srgb, hsl(var(--agent-tint)) 4%, transparent)
+    color-mix(in srgb, hsl(var(--agent-tint)) 7%, transparent),
+    color-mix(in srgb, hsl(var(--agent-tint)) 7%, transparent)
   );
 }
 
 .dark .agent-tint-surface {
   background-image: linear-gradient(
-    color-mix(in srgb, hsl(var(--agent-tint)) 6%, transparent),
-    color-mix(in srgb, hsl(var(--agent-tint)) 6%, transparent)
+    color-mix(in srgb, hsl(var(--agent-tint)) 10%, transparent),
+    color-mix(in srgb, hsl(var(--agent-tint)) 10%, transparent)
   );
 }
 
 /* The chat shell paints over the pane; carry the pane's tint onto its surface. */
 .pane[data-agent-tint] .native-chat-pane-shell {
   background-image: linear-gradient(
-    color-mix(in srgb, hsl(var(--agent-tint)) 5%, transparent),
-    color-mix(in srgb, hsl(var(--agent-tint)) 5%, transparent)
+    color-mix(in srgb, hsl(var(--agent-tint)) 9%, transparent),
+    color-mix(in srgb, hsl(var(--agent-tint)) 9%, transparent)
   );
 }
 
 .dark .pane[data-agent-tint] .native-chat-pane-shell {
   background-image: linear-gradient(
-    color-mix(in srgb, hsl(var(--agent-tint)) 8%, transparent),
-    color-mix(in srgb, hsl(var(--agent-tint)) 8%, transparent)
+    color-mix(in srgb, hsl(var(--agent-tint)) 13%, transparent),
+    color-mix(in srgb, hsl(var(--agent-tint)) 13%, transparent)
+  );
+}
+
+/* The composer the user types into gets the strongest tint so the active agent is unmistakable. */
+.pane[data-agent-tint] [data-native-chat-composer-scope] {
+  background-image: linear-gradient(
+    color-mix(in srgb, hsl(var(--agent-tint)) 12%, transparent),
+    color-mix(in srgb, hsl(var(--agent-tint)) 12%, transparent)
+  );
+}
+
+.dark .pane[data-agent-tint] [data-native-chat-composer-scope] {
+  background-image: linear-gradient(
+    color-mix(in srgb, hsl(var(--agent-tint)) 18%, transparent),
+    color-mix(in srgb, hsl(var(--agent-tint)) 18%, transparent)
   );
 }
 
