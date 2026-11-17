@@ -1925,13 +1925,42 @@ html.native-shell .app-layout {
   box-shadow: 0 1px 2px color-mix(in srgb, var(--worktree-sidebar-foreground) 3%, transparent);
 }
 
-/* Selection paints over the tint wash; the hue answers to the border instead. */
-[data-worktree-card-surface][data-agent-tint][data-worktree-card-active='primary'] {
+/* Selection paints over the tint wash; the hue answers to the border, a left band,
+   and a breathing ring so the active row scans without relying on the wash alone. */
+[data-worktree-card-surface][data-agent-tint][data-worktree-card-active='primary'],
+.worktree-agent-row-hover[data-agent-tint][data-focused-agent-pane='true'] {
   border-color: color-mix(in srgb, hsl(var(--agent-tint)) 55%, var(--worktree-sidebar-border));
+  box-shadow:
+    inset 3px 0 0 color-mix(in srgb, hsl(var(--agent-tint)) 80%, transparent),
+    0 0 0 1px color-mix(in srgb, hsl(var(--agent-tint)) 30%, transparent);
+  animation: agent-tint-selected-pulse 1.9s ease-in-out infinite;
 }
 
-.dark [data-worktree-card-surface][data-agent-tint][data-worktree-card-active='primary'] {
+.dark [data-worktree-card-surface][data-agent-tint][data-worktree-card-active='primary'],
+.dark .worktree-agent-row-hover[data-agent-tint][data-focused-agent-pane='true'] {
   border-color: color-mix(in srgb, hsl(var(--agent-tint)) 65%, var(--worktree-sidebar-border));
+}
+
+@keyframes agent-tint-selected-pulse {
+  0%,
+  100% {
+    box-shadow:
+      inset 3px 0 0 color-mix(in srgb, hsl(var(--agent-tint)) 80%, transparent),
+      0 0 0 1px color-mix(in srgb, hsl(var(--agent-tint)) 30%, transparent);
+  }
+
+  50% {
+    box-shadow:
+      inset 3px 0 0 color-mix(in srgb, hsl(var(--agent-tint)) 95%, transparent),
+      0 0 0 2px color-mix(in srgb, hsl(var(--agent-tint)) 62%, transparent);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-worktree-card-surface][data-agent-tint][data-worktree-card-active='primary'],
+  .worktree-agent-row-hover[data-agent-tint][data-focused-agent-pane='true'] {
+    animation: none;
+  }
 }
 
 /* #15971: the wash matches the pill's fill, so its border carries the shape. A neutral sidebar tint
@@ -2006,14 +2035,7 @@ html.native-shell .app-layout {
   background-color: color-mix(in srgb, var(--accent) 70%, transparent);
 }
 
-/* A focused agent row keeps its fill; the ring carries the selection cue in the agent's hue. */
-.worktree-agent-row-hover[data-agent-tint][data-focused-agent-pane='true'] {
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, hsl(var(--agent-tint)) 50%, transparent);
-}
-
-.dark .worktree-agent-row-hover[data-agent-tint][data-focused-agent-pane='true'] {
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, hsl(var(--agent-tint)) 62%, transparent);
-}
+/* A focused agent row keeps its fill; the band-and-pulse rule above carries the selection cue in the agent's hue. */
 
 /* Why: one-shot sidebar education cards need stronger separation than
    worktree-sidebar-accent, which sits almost on top of the sidebar fill. */
@@ -2355,7 +2377,7 @@ html.native-shell .app-layout {
 /* Indent compact agents inside the existing workspace frame instead of adding nested cards. */
 [data-compact-agent-list='true'] .compact-agent-row.worktree-agent-lineage-parent-row,
 [data-compact-agent-list='true'] .compact-agent-row.worktree-agent-lineage-child-row {
-  background: transparent;
+  background-color: transparent;
   box-shadow: none;
 }
 
@@ -2367,18 +2389,18 @@ html.native-shell .app-layout {
   .compact-agent-row.worktree-agent-lineage-parent-row.worktree-agent-row-hover:hover,
 [data-compact-agent-list='true']
   .compact-agent-row.worktree-agent-lineage-child-row.worktree-agent-row-hover:hover {
-  background: var(--worktree-sidebar-accent);
+  background-color: var(--worktree-sidebar-accent);
 }
 
 [data-compact-agent-list='true']
   .compact-agent-row.worktree-agent-row-hover[data-focused-agent-pane='true'] {
-  background: color-mix(in srgb, var(--sidebar-foreground) 12%, var(--sidebar-accent));
+  background-color: color-mix(in srgb, var(--sidebar-foreground) 12%, var(--sidebar-accent));
 }
 
 .dark
   [data-compact-agent-list='true']
   .compact-agent-row.worktree-agent-row-hover[data-focused-agent-pane='true'] {
-  background: color-mix(in srgb, var(--accent) 70%, transparent);
+  background-color: color-mix(in srgb, var(--accent) 70%, transparent);
 }
 
 [data-compact-agent-list='true'] .worktree-agent-lineage-children {
