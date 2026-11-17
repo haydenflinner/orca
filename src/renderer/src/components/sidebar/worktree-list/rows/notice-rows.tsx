@@ -24,7 +24,7 @@ type NoticeRowFrameProps = {
 function NoticeRowFrame({
   vItem,
   measureVirtualRowElement,
-  className = 'absolute left-0 right-0 top-0',
+  className = 'absolute left-0 right-0 top-0 pb-[3px]',
   indentLeft = 0,
   banded = false,
   children
@@ -119,7 +119,7 @@ export function renderPendingCreationVirtualRow(args: {
       vItem={args.vItem}
       measureVirtualRowElement={args.measureVirtualRowElement}
       banded={args.sectionBanded}
-      className="absolute left-0 right-0 top-0 px-2 pb-1.5"
+      className="absolute left-0 right-0 top-0 px-2 pb-[9px]"
       indentLeft={getWorktreeCardSurfaceInset({
         isGrouped: true,
         groupDepth: args.row.groupDepth
