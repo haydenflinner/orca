@@ -1,5 +1,7 @@
 import React, { useState, useCallback } from 'react'
 import { cn } from '@/lib/class-names'
+import { agentTintStyle } from '@/lib/agent-tint/agent-tint'
+import { useAgentTint } from '@/lib/agent-tint/agent-tint-context'
 import {
   opensClaudeParentConversation,
   viewClaudeAgentFromRow
@@ -131,6 +133,7 @@ const DashboardAgentRow = React.memo(function DashboardAgentRow({
 }: Props) {
   const t = useTranslate()
   useUiLanguageRevision()
+  const tint = useAgentTint(agent.paneKey)
   const view = useClaudeAgentRowView(agent)
   const highlighted = view ? view.current && view.focused : isFocusedPane
   const hasChildDisclosure =
@@ -255,7 +258,7 @@ const DashboardAgentRow = React.memo(function DashboardAgentRow({
       onClick={handleActivate}
       className={cn(
         // Why: named group scopes the X-reveal to this row, not every row in the card.
-        'agent-disclosure-row group/agent-row relative -ml-2 flex flex-col py-1',
+        'agent-disclosure-row group/agent-row relative -ml-2 flex flex-col py-1 agent-tint-fill',
         isLineageChild ? 'pl-5 pr-2' : 'px-2',
         // Why: hover wash stays softer than the enclosing card's highlight.
         'cursor-pointer rounded-sm worktree-agent-row-hover',
@@ -273,6 +276,8 @@ const DashboardAgentRow = React.memo(function DashboardAgentRow({
           : undefined
       }
       data-agent-send-target={sendTargetStatus}
+      data-agent-tint={tint.h}
+      style={agentTintStyle(tint)}
       title={titleParts.length > 0 ? titleParts.join(' • ') : undefined}
       role={participatesInLineage ? 'treeitem' : undefined}
       aria-level={participatesInLineage ? (lineage?.depth ?? 0) + 1 : undefined}
