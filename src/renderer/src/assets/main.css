@@ -1769,6 +1769,76 @@ html.native-shell .app-layout {
   background: var(--worktree-sidebar-band);
 }
 
+/* Per-agent identity hues; a deterministic slot tints agent cards and workspaces. */
+[data-agent-tint='0'] {
+  --agent-tint: 215 90% 60%;
+}
+[data-agent-tint='1'] {
+  --agent-tint: 160 60% 45%;
+}
+[data-agent-tint='2'] {
+  --agent-tint: 280 65% 62%;
+}
+[data-agent-tint='3'] {
+  --agent-tint: 25 85% 55%;
+}
+[data-agent-tint='4'] {
+  --agent-tint: 340 70% 58%;
+}
+[data-agent-tint='5'] {
+  --agent-tint: 190 75% 45%;
+}
+[data-agent-tint='6'] {
+  --agent-tint: 95 55% 45%;
+}
+[data-agent-tint='7'] {
+  --agent-tint: 45 90% 52%;
+}
+
+.agent-tint-card {
+  background-image: linear-gradient(
+    color-mix(in srgb, hsl(var(--agent-tint)) 7%, transparent),
+    color-mix(in srgb, hsl(var(--agent-tint)) 7%, transparent)
+  );
+  border-color: color-mix(in srgb, hsl(var(--agent-tint)) 35%, transparent);
+}
+
+.dark .agent-tint-card {
+  background-image: linear-gradient(
+    color-mix(in srgb, hsl(var(--agent-tint)) 11%, transparent),
+    color-mix(in srgb, hsl(var(--agent-tint)) 11%, transparent)
+  );
+}
+
+.agent-tint-surface {
+  background-image: linear-gradient(
+    color-mix(in srgb, hsl(var(--agent-tint)) 4%, transparent),
+    color-mix(in srgb, hsl(var(--agent-tint)) 4%, transparent)
+  );
+}
+
+.dark .agent-tint-surface {
+  background-image: linear-gradient(
+    color-mix(in srgb, hsl(var(--agent-tint)) 6%, transparent),
+    color-mix(in srgb, hsl(var(--agent-tint)) 6%, transparent)
+  );
+}
+
+/* The chat shell paints over the pane; carry the pane's tint onto its surface. */
+.pane[data-agent-tint] .native-chat-pane-shell {
+  background-image: linear-gradient(
+    color-mix(in srgb, hsl(var(--agent-tint)) 5%, transparent),
+    color-mix(in srgb, hsl(var(--agent-tint)) 5%, transparent)
+  );
+}
+
+.dark .pane[data-agent-tint] .native-chat-pane-shell {
+  background-image: linear-gradient(
+    color-mix(in srgb, hsl(var(--agent-tint)) 8%, transparent),
+    color-mix(in srgb, hsl(var(--agent-tint)) 8%, transparent)
+  );
+}
+
 /* Light sidebar-accent/40 disappears on the panel; lift nested hover without overpowering workspace cards. */
 .worktree-sidebar-card-hover:hover {
   background: color-mix(in srgb, var(--sidebar-foreground) 4%, transparent);

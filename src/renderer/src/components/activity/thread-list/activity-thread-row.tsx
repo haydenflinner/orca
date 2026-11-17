@@ -14,6 +14,7 @@ import { PaletteRowShortcutBadge } from '@/components/worktree-jump/rows/worktre
 import { EventTime, ThreadAgentStateIndicator } from './activity-thread-controls'
 import { ActivityThreadHoverCard } from '../thread-preview/activity-thread-hover-card'
 import { activityThreadRowCopy } from '../threads/activity-thread-presentation'
+import { agentTintIndex } from '@/lib/agent-tint/agent-tint'
 import type { AgentPaneThread } from '../threads/activity-thread-types'
 import type { ActivityThreadClickEvent } from './use-activity-thread-selection'
 
@@ -114,6 +115,7 @@ export const ActivityThreadRow = React.memo(function ActivityThreadRow({
         data-worktree-card-surface="true"
         data-worktree-card-active={selected ? 'primary' : undefined}
         data-worktree-card-selected={multiSelected || undefined}
+        data-agent-tint={agentTintIndex(thread.paneKey)}
         onClick={(event) => onSelect(thread, event)}
         // Focus opens the thread so Tab and arrow navigation scan agents without a confirm key.
         onFocus={() => onOpen?.(thread)}
@@ -127,7 +129,7 @@ export const ActivityThreadRow = React.memo(function ActivityThreadRow({
         role="listitem"
         aria-label={taskTitle}
         aria-current={selected ? 'true' : undefined}
-        className="group relative flex w-full cursor-pointer flex-col gap-1 rounded-lg border border-transparent px-1.5 py-1.5 text-left transition-[background-color,border-color,opacity,box-shadow] duration-200 outline-none select-none worktree-sidebar-card-hover focus-visible:ring-1 focus-visible:ring-ring"
+        className="group relative flex w-full cursor-pointer flex-col gap-1 rounded-lg border border-transparent px-1.5 py-1.5 text-left transition-[background-color,border-color,opacity,box-shadow] duration-200 outline-none select-none worktree-sidebar-card-hover agent-tint-card focus-visible:ring-1 focus-visible:ring-ring"
       >
         <div className="flex min-w-0 items-start gap-1.5">
           <span className="mt-0.5 inline-flex shrink-0">
