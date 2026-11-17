@@ -9,6 +9,8 @@ import {
 } from '@/runtime/native-chat/session-ownership/structured-agent-session-owner'
 import { ActivityPortalContainer } from '@/components/ui/activity-portal-container'
 import { RetainedPaneHost } from '../../../tab-group/retained-pane/RetainedPaneHost'
+import { agentTintIndex } from '@/lib/agent-tint/agent-tint'
+import { structuredAgentSessionPaneKey } from '../../../../../../shared/agent-session/view/structured-agent-session-projection'
 import NativeChatView from '../../NativeChatView'
 import { NativeChatComposerEditorOwner } from '../../composer/editor/native-chat-composer-editor-owner'
 import { NativeChatHostOutageOwner } from '../../host-access/native-chat-host-outage-owner'
@@ -56,6 +58,7 @@ const StructuredAgentSessionOverlaySlot = memo(function StructuredAgentSessionOv
       // Why not over a backdrop: dimming the translucent chat also dims its text.
       dimmed={hasSplitGroups && !isFocusedGroup && !backdropActive}
       data-structured-agent-session-overlay-tab-id={tab.id}
+      data-agent-tint={agentTintIndex(structuredAgentSessionPaneKey(tab.id, tab.entityId))}
       onFocusOwningGroup={onFocusOwningGroup}
     >
       <NativeChatPaneLifetime key={`${owner}:${tab.entityId}`} isVisible={effectsConnected}>

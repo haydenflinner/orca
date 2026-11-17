@@ -30,6 +30,7 @@ type RetainedPaneHostProps = {
   children: React.ReactNode
   'data-terminal-overlay-tab-id'?: string
   'data-structured-agent-session-overlay-tab-id'?: string
+  'data-agent-tint'?: number
 }
 
 export function RetainedPaneHost({

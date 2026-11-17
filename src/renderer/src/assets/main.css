@@ -1855,6 +1855,7 @@ html.native-shell .app-layout {
 }
 
 /* The chat canvas carries the pane's hue across the whole conversation surface. */
+[data-agent-tint] [data-native-chat-root],
 [data-native-chat-root][data-agent-tint] {
   background-image: linear-gradient(
     color-mix(in srgb, hsl(var(--agent-tint)) 6%, transparent),
@@ -1862,6 +1863,7 @@ html.native-shell .app-layout {
   );
 }
 
+.dark [data-agent-tint] [data-native-chat-root],
 .dark [data-native-chat-root][data-agent-tint] {
   background-image: linear-gradient(
     color-mix(in srgb, hsl(var(--agent-tint)) 9%, transparent),
@@ -1870,21 +1872,21 @@ html.native-shell .app-layout {
 }
 
 /* The composer the user types into gets the strongest tint so the active agent is unmistakable. */
-[data-native-chat-root][data-agent-tint] [data-composer-field] {
+[data-agent-tint] [data-composer-field] {
   background-image: linear-gradient(
     color-mix(in srgb, hsl(var(--agent-tint)) 9%, transparent),
     color-mix(in srgb, hsl(var(--agent-tint)) 9%, transparent)
   );
 }
 
-.dark [data-native-chat-root][data-agent-tint] [data-composer-field] {
+.dark [data-agent-tint] [data-composer-field] {
   background-image: linear-gradient(
     color-mix(in srgb, hsl(var(--agent-tint)) 13%, transparent),
     color-mix(in srgb, hsl(var(--agent-tint)) 13%, transparent)
   );
 }
 
-[data-native-chat-root][data-agent-tint] .native-chat-composer-card {
+[data-agent-tint] .native-chat-composer-card {
   background-image: linear-gradient(
     color-mix(in srgb, hsl(var(--agent-tint)) 14%, transparent),
     color-mix(in srgb, hsl(var(--agent-tint)) 14%, transparent)
@@ -1892,7 +1894,7 @@ html.native-shell .app-layout {
   border-color: color-mix(in srgb, hsl(var(--agent-tint)) 45%, var(--chat-composer-border));
 }
 
-.dark [data-native-chat-root][data-agent-tint] .native-chat-composer-card {
+.dark [data-agent-tint] .native-chat-composer-card {
   background-image: linear-gradient(
     color-mix(in srgb, hsl(var(--agent-tint)) 20%, transparent),
     color-mix(in srgb, hsl(var(--agent-tint)) 20%, transparent)

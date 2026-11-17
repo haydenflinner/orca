@@ -1,6 +1,7 @@
 import React from 'react'
 import { useAppStore } from '@/store/index'
 import { cn } from '@/lib/class-names'
+import { agentTintIndex } from '@/lib/agent-tint/agent-tint'
 import { translate } from '@/i18n/i18n'
 import { useTranslate, type Translate } from '@/i18n/use-translate'
 import { retryBackgroundWorktreeCreation } from '@/lib/workspace/creation/worktree-creation-flow'
@@ -208,6 +209,7 @@ export default function PendingNativeChatCreation({
       />
       <div
         data-native-chat-root="true"
+        data-agent-tint={agentTintIndex(creationId)}
         className={cn(NATIVE_CHAT_APPEARANCE_ROOT_CLASS, 'flex min-h-0 w-full flex-1 flex-col')}
         style={appearanceStyle}
         data-native-chat-scheme={appearanceStyle.colorScheme}
