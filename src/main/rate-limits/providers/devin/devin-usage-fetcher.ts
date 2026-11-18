@@ -1,3 +1,4 @@
+import { z } from 'zod'
 import { getMainHttpClient } from '../../../network/http-client'
 import type {
   ProviderRateLimits,
@@ -19,25 +20,29 @@ const DAILY_WINDOW_MINUTES = 1_440
 const WEEKLY_WINDOW_MINUTES = 10_080
 const MONTHLY_WINDOW_MINUTES = 43_200
 
-type DevinPlanStatus = {
-  planInfo?: { planName?: string; billingStrategy?: string }
-  planEnd?: string
-  dailyQuotaRemainingPercent?: number
-  weeklyQuotaRemainingPercent?: number
-  dailyQuotaResetAtUnix?: string
-  weeklyQuotaResetAtUnix?: string
-  hideWeeklyQuota?: boolean
-  acuConsumed?: number
-  acuLimit?: number
-}
+const devinPlanStatusSchema = z.looseObject({
+  planInfo: z.looseObject({ planName: z.string().optional() }).optional(),
+  planEnd: z.string().optional(),
+  dailyQuotaRemainingPercent: z.number().optional(),
+  weeklyQuotaRemainingPercent: z.number().optional(),
+  dailyQuotaResetAtUnix: z.string().optional(),
+  weeklyQuotaResetAtUnix: z.string().optional(),
+  hideWeeklyQuota: z.boolean().optional(),
+  acuConsumed: z.number().optional(),
+  acuLimit: z.number().optional()
+})
 
-type DevinUserStatusResponse = {
-  userStatus?: {
-    email?: string
-    name?: string
-    planStatus?: DevinPlanStatus
-  }
-}
+const devinUserStatusSchema = z.looseObject({
+  userStatus: z
+    .looseObject({
+      email: z.string().optional(),
+      name: z.string().optional(),
+      planStatus: devinPlanStatusSchema.optional()
+    })
+    .optional()
+})
+
+type DevinPlanStatus = z.infer<typeof devinPlanStatusSchema>
 
 function result(
   status: ProviderRateLimits['status'],
@@ -127,7 +132,7 @@ function devinMetadata(credentials: DevinCredentials): Record<string, string> {
 export async function fetchDevinRateLimits(
   options: { signal?: AbortSignal; credentialReadResult?: DevinCredentialsReadResult } = {}
 ): Promise<ProviderRateLimits> {
-  const readResult = options.credentialReadResult ?? readDevinCredentials()
+  const readResult = options.credentialReadResult ?? (await readDevinCredentials())
   if (readResult.status === 'missing') {
     return result('unavailable', 'Not signed in to Devin — run devin auth login', {
       failureKind: 'missing-credentials',
@@ -165,10 +170,8 @@ export async function fetchDevinRateLimits(
       })
     }
     const data: unknown = await res.json()
-    const planStatus =
-      typeof data === 'object' && data !== null
-        ? (data as DevinUserStatusResponse).userStatus?.planStatus
-        : undefined
+    const userStatus = devinUserStatusSchema.safeParse(data).data?.userStatus
+    const planStatus = userStatus?.planStatus
     if (!planStatus) {
       return result('unavailable', 'Devin account status did not include plan usage', {
         failureKind: 'usage-unavailable',
@@ -194,7 +197,6 @@ export async function fetchDevinRateLimits(
         source: 'cli'
       })
     }
-    const userStatus = (data as DevinUserStatusResponse).userStatus
     return {
       provider: 'devin',
       session,

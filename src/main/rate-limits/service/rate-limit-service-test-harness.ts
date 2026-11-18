@@ -117,7 +117,7 @@ export function resetRateLimitProviderMocks(): void {
   vi.mocked(fetchDevinRateLimits).mockResolvedValue(unavailableProvider('devin'))
   vi.mocked(hasMiniMaxSessionCookie).mockReturnValue(false)
   vi.mocked(readGrokAuthSession).mockReturnValue({ status: 'missing' })
-  vi.mocked(readDevinCredentials).mockReturnValue({ status: 'missing' })
+  vi.mocked(readDevinCredentials).mockResolvedValue({ status: 'missing' })
   vi.mocked(readCursorAuthSession).mockResolvedValue({ status: 'missing' })
 }
 

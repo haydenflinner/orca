@@ -5,11 +5,11 @@ import {
   type SettledProviderResult
 } from './service-sibling-provider-result'
 
-export function prepareDevinUsageFetch(signal: AbortSignal): {
+export async function prepareDevinUsageFetch(signal: AbortSignal): Promise<{
   authConfigured: boolean
   resultPromise: Promise<SettledProviderResult>
-} {
-  const credentialReadResult = readDevinCredentials()
+}> {
+  const credentialReadResult = await readDevinCredentials()
   return {
     authConfigured: credentialReadResult.status === 'ok',
     resultPromise: settleSiblingProviderFetch(

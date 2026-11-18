@@ -31,12 +31,16 @@ export abstract class RateLimitServiceFullCycleApplication extends RateLimitServ
     const museResultPromise = this.startMuseUsageFetch(signal)
     const devinBeforeFetch = this.state.devin
     this.updateState({ ...this.state, devin: this.withFetchingStatus(devinBeforeFetch, 'devin') })
-    const devinFetch = prepareDevinUsageFetch(signal)
-    this.devinAuthConfigured = devinFetch.authConfigured
+    // Starts concurrently so credential probing never delays the shared preparation's
+    // synchronous entry — a cancel must still land before account attribution resolves.
+    const devinFetchPromise = prepareDevinUsageFetch(signal)
     const prepared = await this.prepareFetchAllCycle(signal, options)
     if (!prepared) {
+      void devinFetchPromise.catch(() => undefined)
       return
     }
+    const devinFetch = await devinFetchPromise
+    this.devinAuthConfigured = devinFetch.authConfigured
     const {
       claudeTarget,
       claudeGeneration,
@@ -69,6 +73,7 @@ export abstract class RateLimitServiceFullCycleApplication extends RateLimitServ
       antigravityResultPromise
     } = prepared
     if (signal.aborted) {
+      void devinFetchPromise.catch(() => undefined)
       return
     }
 

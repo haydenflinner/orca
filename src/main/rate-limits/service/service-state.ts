@@ -28,7 +28,6 @@ import type { NormalizedClaudeAccountSelectionTarget } from '../../claude-accoun
 import type { InactiveClaudeAccount } from '../providers/claude/claude-managed-account-usage'
 import type { NetworkProxySettings } from '../../../shared/network/network-proxy'
 import { readGrokAuthSession } from '../providers/grok/grok-auth'
-import { readDevinCredentials } from '../providers/devin/devin-credentials'
 
 export abstract class RateLimitServiceState {
   protected state: InternalRateLimitState = {
@@ -46,8 +45,8 @@ export abstract class RateLimitServiceState {
     devin: null
   }
   protected grokAuthConfigured = readGrokAuthSession().status === 'ok'
-  protected devinAuthConfigured = readDevinCredentials().status === 'ok'
   // Async Keychain/desktop DB probing belongs in fetch cycles, never synchronous construction.
+  protected devinAuthConfigured = false
   protected cursorAuthConfigured = false
   protected openCodeGoApiKeyConfigured = false
   protected pollInterval: number = DEFAULT_POLL_MS

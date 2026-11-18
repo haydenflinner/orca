@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from 'node:fs'
+import { access, readFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { parse as parseToml } from 'smol-toml'
@@ -40,29 +40,37 @@ function devinDataHomeCandidates(): string[] {
   return homes
 }
 
-export function readDevinCredentials(): DevinCredentialsReadResult {
+export async function readDevinCredentials(): Promise<DevinCredentialsReadResult> {
   const envKey = process.env[DEVIN_API_KEY_ENV]?.trim()
   let sawError = false
   for (const home of devinDataHomeCandidates()) {
     const path = join(home, 'devin', 'credentials.toml')
-    if (!existsSync(path)) {
+    if (
+      !(await access(path).then(
+        () => true,
+        () => false
+      ))
+    ) {
       continue
     }
     try {
-      const parsed: unknown = parseToml(readFileSync(path, 'utf-8'))
+      const parsed: unknown = parseToml(await readFile(path, 'utf-8'))
       if (typeof parsed !== 'object' || parsed === null) {
         sawError = true
         continue
       }
-      const record = parsed as Record<string, unknown>
-      const fileKey = typeof record.windsurf_api_key === 'string' ? record.windsurf_api_key : ''
+      const fileKey =
+        'windsurf_api_key' in parsed && typeof parsed.windsurf_api_key === 'string'
+          ? parsed.windsurf_api_key
+          : ''
       const apiKey = envKey || fileKey
       if (!apiKey) {
         continue
       }
+      const serverUrl = 'api_server_url' in parsed ? parsed.api_server_url : null
       const server =
-        typeof record.api_server_url === 'string' && record.api_server_url.trim()
-          ? record.api_server_url.trim().replace(/\/$/, '')
+        typeof serverUrl === 'string' && serverUrl.trim()
+          ? serverUrl.trim().replace(/\/$/, '')
           : DEFAULT_API_SERVER_URL
       return { status: 'ok', credentials: { apiKey, apiServerUrl: server } }
     } catch {
