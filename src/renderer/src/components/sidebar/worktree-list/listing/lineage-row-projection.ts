@@ -148,7 +148,10 @@ export function buildLineageRowProjection(
       frames[frame.end].closing += 7
     }
     const next = frames[index + 1]
-    frame.after = next?.root === frame.root ? 0 : 6
+    const nextRow = rows[index + 1]
+    const nextIsGroupHeader = nextRow?.type === 'header' || nextRow?.type === 'host-header'
+    // Sibling workspaces in one project pack tighter; the run before a group header stays airy.
+    frame.after = next?.root === frame.root ? 0 : nextIsGroupHeader ? 6 : 2
   })
   return { frames, occurrencesByIdentity, rowIndexByKey, restoreSignal: JSON.stringify(rowKeys) }
 }
