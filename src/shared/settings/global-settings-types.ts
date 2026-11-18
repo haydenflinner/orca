@@ -44,9 +44,6 @@ import type {
 } from '../ui-chrome/ui-chrome-types'
 import type { WorktreeVisibilityDefaults } from '../repository/repo-types'
 
-/** MiniMax account region used to select the quota endpoint. */
-export type MiniMaxEndpoint = 'overseas' | 'cn'
-
 export type GlobalSettings = GlobalSettingsBase & {
   workspaceDir: string
   /** Host-owned defaults used when a repository has no explicit visibility override. */
@@ -370,7 +367,7 @@ export type GlobalSettings = GlobalSettingsBase & {
   /** Comma-separated MiniMax model names to show in the status bar usage window. */
   minimaxUsageModels: string
   /** MiniMax account region; defaults to overseas for existing users. */
-  minimaxEndpoint: MiniMaxEndpoint
+  minimaxEndpoint: 'overseas' | 'cn'
   /** GLM Coding Plan site whose API key is saved in AI Provider Accounts; defaults to the international Z.AI console. */
   zcodePlanSite?: ZcodePlanSite
   /** Extract OAuth credentials from the local Gemini CLI for rate-limit fetching. Off by default (explicit opt-in). */

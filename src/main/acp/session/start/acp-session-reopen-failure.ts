@@ -12,7 +12,7 @@ import {
 } from '../../transport/acp-errors'
 import type { AcpDialect } from '../../acp-dialects/acp-dialect'
 import type { InitializeResponse } from '../../generated/acp-protocol.generated'
-import type { AcpStructuredConnection } from '../../process/acp-structured-connection
+import type { AcpStructuredConnection } from '../../process/acp-structured-connection'
 import type { AcpStructuredLaunch } from '../../launch/acp-structured-launch-resolution'
 import { providerRequestTimeoutOf } from '../../../provider-process/provider-request-timeout'
 

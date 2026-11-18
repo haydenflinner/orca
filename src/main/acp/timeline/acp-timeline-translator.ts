@@ -1,10 +1,6 @@
 import { BoundedMap } from '../../../shared/collections/bounded-map'
 import type { ProviderTimelineEvent } from '../../native-chat/agent-session-timeline/provider-timeline-event'
-import {
-  acpNotificationEnvelopeSchema,
-  readAcpSessionEvent,
-  type AcpSessionEvent
-} from '../protocol/acp-session-events'
+import { acpNotificationEnvelopeSchema, readAcpSessionEvent } from '../protocol/acp-session-events'
 import { AcpContextTimeline } from './acp-context-usage'
 import { AcpThreadGoalTimeline } from './acp-thread-goal-timeline'
 import { AcpBackgroundTaskTimeline } from './acp-background-task-timeline'
@@ -128,9 +124,10 @@ export class AcpTimelineTranslator {
     if (prompt?.clientMessageId !== clientMessageId) {
       return []
     }
-    const events = this.start(prompt.turn, ending.at)
-    events.push(...this.endTurn(prompt.turn, { ...ending, durationMs: prompt.durationMs }))
-    return events
+    return [
+      ...this.start(prompt.turn, ending.at),
+      ...this.endTurn(prompt.turn, { ...ending, durationMs: prompt.durationMs })
+    ]
   }
 
   contextModels = (models: unknown, at: number): ProviderTimelineEvent[] =>
@@ -161,14 +158,6 @@ export class AcpTimelineTranslator {
     return this.backgroundTasks.reconcile(taskId, this.options.sessionId)
   }
 
-  sessionEvent(event: AcpSessionEvent, at: number): ProviderTimelineEvent[] {
-    return this.notification(
-      'session/update',
-      event.kind === 'known' ? event.notification : event.raw,
-      at
-    )
-  }
-
   notification(method: string, params: unknown, at: number): ProviderTimelineEvent[] {
     if (this.ownership.disposed) {
       return []
@@ -197,12 +186,11 @@ export class AcpTimelineTranslator {
     if (markedReplay || (extension?.replay === undefined && this.loading)) {
       return this.context.history(update, extension?.usage, at, { thread: this.options.sessionId })
     }
-    const providerTurn = extension?.turn
     const opens =
       (update !== undefined && ACP_SUBSTANTIVE_UPDATES.includes(update.sessionUpdate)) ||
       extension?.end !== undefined ||
       extension?.started === true
-    const offeredTurn = providerTurn ?? open
+    const offeredTurn = extension?.turn ?? open
     const operation = this.ownership.operation()
     const owner = update
       ? this.ownership.messages.owner(offeredTurn, update, operation.settled)

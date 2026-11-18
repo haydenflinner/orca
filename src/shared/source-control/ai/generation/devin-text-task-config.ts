@@ -1,7 +1,4 @@
-import {
-  generationArgumentText,
-  type GenerationArgument
-} from './generation-argument'
+import { generationArgumentText, type GenerationArgument } from './generation-argument'
 
 // Devin's print mode has no tool-disable flag; a --config override carrying deny rules is the only
 // tool isolation it accepts. Deny rules still apply under a dangerous permission mode, and project

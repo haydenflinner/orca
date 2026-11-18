@@ -1,5 +1,5 @@
 import type { ProviderRateLimits } from '../../../../shared/agent-usage/rate-limits/rate-limit-types'
-import type { MiniMaxEndpoint } from '../../../../shared/settings/global-settings-types'
+import type { MiniMaxEndpoint } from '../../../../shared/agent-accounts/usage-credentials/minimax-endpoint'
 import {
   extractMiniMaxCookieValue,
   fetchMiniMaxWithApiKey,

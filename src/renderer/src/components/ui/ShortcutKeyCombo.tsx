@@ -4,15 +4,19 @@ import { useTranslate } from '@/i18n/use-translate'
 
 function KeyCap({
   label,
-  className
+  className,
+  compact = false
 }: {
   label: React.ReactNode
   className?: string
+  compact?: boolean
 }): React.JSX.Element {
   return (
     <span
       className={cn(
-        'inline-flex min-w-6 items-center justify-center rounded border border-border/80 bg-secondary/70 px-1.5 py-0.5 text-xs font-medium text-muted-foreground shadow-sm',
+        compact
+          ? 'inline-flex min-w-4 items-center justify-center rounded border border-border/60 bg-secondary/90 px-1 py-px text-[9px] font-medium text-muted-foreground'
+          : 'inline-flex min-w-6 items-center justify-center rounded border border-border/80 bg-secondary/70 px-1.5 py-0.5 text-xs font-medium text-muted-foreground shadow-sm',
         className
       )}
     >
@@ -27,6 +31,8 @@ type ShortcutKeyComboProps = {
   separatorClassName?: string
   // Override cap colors when chips sit on a non-default surface (e.g. a filled primary card).
   keyCapClassName?: string
+  // Dense caps for row badges that must not grow list height.
+  compact?: boolean
   renderKey?: (key: string) => React.ReactNode
   // Double taps use repeated labels/glyphs with a space instead of +.
   doubleTap?: boolean
@@ -37,6 +43,7 @@ export function ShortcutKeyCombo({
   className,
   separatorClassName,
   keyCapClassName,
+  compact = false,
   renderKey,
   doubleTap = false
 }: ShortcutKeyComboProps): React.JSX.Element {
@@ -56,10 +63,23 @@ export function ShortcutKeyCombo({
     >
       {keys.map((key, index) => (
         <React.Fragment key={`${key}-${index}`}>
-          <KeyCap label={renderKey ? renderKey(key) : key} className={keyCapClassName} />
+          <KeyCap
+            label={renderKey ? renderKey(key) : key}
+            className={keyCapClassName}
+            compact={compact}
+          />
           {/* Mac uses adjacent glyphs; Windows/Linux use +. Double taps use a space. */}
           {!isMac && !doubleTap && index < keys.length - 1 ? (
-            <span className={separatorClassName ?? 'mx-0.5 text-xs text-muted-foreground'}>+</span>
+            <span
+              className={
+                separatorClassName ??
+                (compact
+                  ? 'text-[9px] text-muted-foreground/60'
+                  : 'mx-0.5 text-xs text-muted-foreground')
+              }
+            >
+              +
+            </span>
           ) : null}
         </React.Fragment>
       ))}

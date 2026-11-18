@@ -27,8 +27,6 @@ import { agentSendDisabledReasonLabel } from '@/lib/agent-session/messaging/agen
 import { useUiLanguageRevision } from '@/i18n/use-ui-language-revision'
 import { useWorktreeAgentActivation } from './use-worktree-agent-activation'
 
-
-
 const stopBubble = (event: React.SyntheticEvent) => event.stopPropagation()
 type Props = {
   worktreeId: string
