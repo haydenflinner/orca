@@ -117,17 +117,20 @@ export function useNativeChatComposerEditSession({
     [editSession, setNotice, acceptsText]
   )
   const sendOrQueue = useSendAfterDictation(root, sendMessage)
+  const saveOrQueue = useSendAfterDictation(root, () => {
+    if (editSession && !disabled && !sendHeld && editSession.canSave) {
+      editSession.save()
+    }
+  })
   const send = useCallback(
     (intent?: NativeChatComposerSendIntent) => {
       if (!editSession) {
         sendOrQueue(intent)
         return
       }
-      if (!disabled && !sendHeld && editSession.canSave) {
-        editSession.save()
-      }
+      saveOrQueue()
     },
-    [disabled, editSession, sendHeld, sendOrQueue]
+    [editSession, saveOrQueue, sendOrQueue]
   )
   const submit = useLatestHandler(() => send())
   // The pane's own handle object, so its identity changes only when that handle does.

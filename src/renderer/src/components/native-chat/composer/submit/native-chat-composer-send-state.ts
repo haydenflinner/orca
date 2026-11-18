@@ -14,7 +14,7 @@ export type NativeChatComposerSendState = {
   sendBlockedReason: string | null
   /** Nothing may be sent yet: an upload, a paste being saved, or the host holds it. */
   sendHeld: boolean
-  /** The draft holds text or images: while the agent works, Send takes Stop's place. */
+  /** The draft holds text, images or still-landing dictation: while the agent works, Send takes Stop's place. */
   hasDraft: boolean
   sendButtonDisabled: boolean
   /** While the agent works: what Cmd/Ctrl+Enter would do instead of a plain send, when it differs. */
@@ -53,6 +53,8 @@ export function nativeChatComposerSendState(
     orcaCommand?: boolean
     /** Goal mode submits the draft as an objective, which starts work. */
     goalMode?: boolean
+    /** Dictated words are still landing, so Send already has a message to queue for. */
+    isDictating?: boolean
   },
   t?: Translate
 ): NativeChatComposerSendState {
@@ -78,7 +80,8 @@ export function nativeChatComposerSendState(
       ) &&
       !structuredAgentSessionCommandChangesConversation(input.draft, input.agent))
   const draftHeld = localHold || (hostHold && !runsWhileHostHolds)
-  const hasDraft = input.draft.trim() !== '' || input.imageAttachments.length > 0
+  const hasDraft =
+    input.draft.trim() !== '' || input.imageAttachments.length > 0 || input.isDictating === true
   // Like Enter, a typed draft sends while the agent works; only an empty one offers Stop.
   const sendButtonDisabled = input.editSession
     ? sendHeld || !input.editSession.canSave
