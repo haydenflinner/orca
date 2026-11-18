@@ -1,7 +1,4 @@
-import type {
-  NativeChatMessage,
-  NativeChatTextBlock
-} from '../../../../../shared/native-chat/native-chat-types'
+import type { NativeChatMessage, NativeChatTextBlock } from './native-chat-types'
 
 const MAX_UTTERANCE_CHARS = 4_000
 
@@ -20,7 +17,7 @@ function isSpeakableTextBlock(
   )
 }
 
-/** `say` reads markup literally, so strip code, images and link targets; keep the words. */
+/** TTS reads markup literally, so strip code, images and link targets; keep the words. */
 export function sanitizeVoiceText(text: string): string {
   let out = text
     .replace(/```[\s\S]*?(?:```|$)/g, ' ')
@@ -59,4 +56,15 @@ export function voiceMessageSettled(
   sessionWorking: boolean
 ): boolean {
   return message.state === 'completed' || message.completedAt != null || followed || !sessionWorking
+}
+
+/** The newest user turn, ignoring queued and unsent rows: its arrival supersedes any speech. */
+export function voiceLastUserMessageId(messages: readonly NativeChatMessage[]): string | null {
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
+    const message = messages[index]
+    if (message.role === 'user' && message.queued !== true && message.unsent !== true) {
+      return message.id
+    }
+  }
+  return null
 }

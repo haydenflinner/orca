@@ -373,6 +373,7 @@ export function MobileNativeChatView({
           {...{ onAttachImage, onPasteImages, attachments, onRemoveAttachment }}
           {...{ isAttaching, onMicPress, micActive, micStarting, micProcessing }}
           {...{ dictationMode, onMicPressIn, onMicPressOut }}
+          {...{ voiceMessages: messages, voiceSessionWorking: agentWorking === true }}
           {...offlineQueue.composerLock}
           sendDisabled={expandedPromptOwnsSend}
           placeholder={composerPlaceholder}

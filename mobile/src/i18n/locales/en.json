@@ -3037,7 +3037,11 @@
       "sendSteer": "Steer",
       "sendSteerQueued": "Steer queued",
       "sendQueueHint": "Runs after the current turn",
-      "sendSteerHint": "Goes into what the agent is doing now"
+      "sendSteerHint": "Goes into what the agent is doing now",
+      "startVoiceMode": "Voice chat: speak replies aloud",
+      "stopVoiceMode": "Stop voice chat",
+      "voiceModeSpeaking": "Speaking…",
+      "voiceModeListening": "Listening…"
     },
     "contextUsage": {
       "label": "Context {{used}} of {{window}} tokens, {{percent}}% used",

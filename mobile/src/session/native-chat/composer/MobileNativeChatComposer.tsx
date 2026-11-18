@@ -39,6 +39,8 @@ import { useMobileNativeChatContextRing } from './commands/MobileNativeChatConte
 import type { MobileNativeChatSendIntent } from './delivery/mobile-native-chat-send'
 import { MobileNativeChatComposerMic } from './dictation/MobileNativeChatComposerMic'
 import type { MobileNativeChatMicProps } from './dictation/MobileNativeChatComposerMic'
+import { MobileNativeChatVoiceToggle } from '../voice/MobileNativeChatVoiceToggle'
+import type { MobileNativeChatVoiceControl } from '../voice/use-mobile-native-chat-voice'
 import { MobileNativeChatDictationLeading } from './dictation/MobileNativeChatDictationLeading'
 import type { MobileNativeChatStructuredComposer } from './commands/mobile-native-chat-structured-composer'
 import { useMobileNativeChatComposerGoalMode } from './commands/use-mobile-native-chat-composer-goal-mode'
@@ -99,6 +101,8 @@ export type MobileNativeChatComposerProps = MobileNativeChatMicProps & {
   onNeedSkills?: () => void
   /** Set while the agent can be stopped; Stop takes Send's slot when Send can't deliver. */
   stop?: { onStop?: () => void; held: boolean } | null
+  /** Hands-free voice chat toggle; absent in edit/queued composes. */
+  voice?: MobileNativeChatVoiceControl | null
 }
 
 /** What a chat's composer sends through, which the chat view hands down from its route. */
@@ -145,7 +149,8 @@ export function MobileNativeChatComposer({
   onNeedSkills,
   stop = null,
   sendFollowUp = null,
-  steerHead
+  steerHead,
+  voice = null
 }: MobileNativeChatComposerProps): React.JSX.Element {
   useMobileColorScheme()
   const t = useMobileTranslation()
@@ -375,6 +380,7 @@ export function MobileNativeChatComposer({
               <MobileNativeChatComposerPlanChip options={sessionOptions} inputRef={fieldRef} />
               {goal.chip}
             </MobileNativeChatDictationLeading>
+            {voice ? <MobileNativeChatVoiceToggle control={voice} /> : null}
             {onMicPress ? (
               <MobileNativeChatComposerMic
                 {...{ onMicPress, micActive, micStarting, micProcessing, dictationMode }}

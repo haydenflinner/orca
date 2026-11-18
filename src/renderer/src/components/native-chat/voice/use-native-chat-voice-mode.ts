@@ -10,7 +10,11 @@ import { currentDictationInsertionTarget } from '../../dictation/use-dictation-q
 import type { NativeChatComposerInput } from '../composer/editor/native-chat-composer-input'
 import { DEFAULT_TTS_WORDS_PER_MINUTE } from '../../../../../shared/speech/speech-types'
 import type { NativeChatMessage } from '../../../../../shared/native-chat/native-chat-types'
-import { voiceMessageSettled, voiceMessageText } from './native-chat-voice-utterance'
+import {
+  voiceLastUserMessageId,
+  voiceMessageSettled,
+  voiceMessageText
+} from '../../../../../shared/native-chat/native-chat-voice-utterance'
 
 export type NativeChatVoiceModeControl = {
   armed: boolean
@@ -20,16 +24,6 @@ export type NativeChatVoiceModeControl = {
   /** False disables the toggle: no `say` on this platform or voice dictation is off. */
   available: boolean
   toggle: () => void
-}
-
-function lastUserMessageId(messages: readonly NativeChatMessage[]): string | null {
-  for (let index = messages.length - 1; index >= 0; index -= 1) {
-    const message = messages[index]
-    if (message.role === 'user' && message.queued !== true && message.unsent !== true) {
-      return message.id
-    }
-  }
-  return null
 }
 
 /**
@@ -116,7 +110,7 @@ export function useNativeChatVoiceMode({
   })
 
   const review = useEffectEvent((list: readonly NativeChatMessage[], working: boolean) => {
-    const userId = lastUserMessageId(list)
+    const userId = voiceLastUserMessageId(list)
     if (userId !== lastUserIdRef.current) {
       lastUserIdRef.current = userId
       // Any new user turn (this client's or another's) supersedes whatever is playing.
@@ -155,7 +149,7 @@ export function useNativeChatVoiceMode({
     if (!initializedRef.current && messages) {
       // Baseline: rows settled before arming are history; an in-flight one speaks whole at completion.
       initializedRef.current = true
-      lastUserIdRef.current = lastUserMessageId(messages)
+      lastUserIdRef.current = voiceLastUserMessageId(messages)
       for (let index = 0; index < messages.length; index += 1) {
         const message = messages[index]
         const text = voiceMessageText(message)
