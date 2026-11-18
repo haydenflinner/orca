@@ -10,7 +10,7 @@ import { CompactAgentRow } from './worktree-card-compact-agent-row'
 import { opensClaudeParentConversation } from '@/lib/agent-session/navigation/claude-agent-row-view'
 import { IdleChildAgentGroupRow } from './worktree-card-idle-child-agents'
 import { useTranslate } from '@/i18n/use-translate'
-import type { AgentChildren } from '@/store/slices/agent-status/agent-row-display-index'
+import type { AgentChildren } from '@/store/slices/agent-status/projection/agent-row-display-model'
 import type { DashboardAgentRow as AgentRow } from '@/components/dashboard/rows/dashboard-agent-row'
 
 export const AgentBranches = React.memo(function AgentBranches({

@@ -7,7 +7,7 @@ import {
   type RefObject
 } from 'react'
 import { hasVisibleOverlay } from '@/lib/overlay-interaction/visible-overlay'
-import { ACTIVITY_VIRTUAL_LIST_SELECTOR } from '@/components/activity/activity-thread-virtual-items'
+import { ACTIVITY_VIRTUAL_LIST_SELECTOR } from '@/components/activity/thread-list/activity-thread-virtual-items'
 import { DICTATION_FOCUS_INPUT_EVENT } from '../../../dictation/dictation-control-events'
 import { routeNativeChatRootKeyToInput } from './native-chat-root-key-routing'
 import {
