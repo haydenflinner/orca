@@ -1,6 +1,6 @@
 import { execFile } from 'node:child_process'
 
-import { copyFile, mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { copyFile, mkdir, mkdtemp, realpath, rm, writeFile } from 'node:fs/promises'
 
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
@@ -80,7 +80,9 @@ node -e 'console.log(JSON.stringify({
           orcaNodeReplExternalModule: string | null
         }
 
-        expect(payload.argv).toEqual([cliPath, '--help', 'two words'])
+        // The darwin launcher canonicalizes the app root; compare paths after realpath.
+        expect(await realpath(payload.argv[0])).toBe(await realpath(cliPath))
+        expect(payload.argv.slice(1)).toEqual(['--help', 'two words'])
         expect(payload.runAsNode).toBe('1')
         // Hide node options from Electron's bootstrap but preserve them for the CLI.
         expect(payload.nodeOptions).toBeNull()
