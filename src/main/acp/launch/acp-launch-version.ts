@@ -7,6 +7,7 @@ import {
 import type { AcpLaunchSpec } from './acp-launch-contract'
 import type { AcpStructuredLaunch } from './acp-structured-launch-resolution'
 import { noteAcpForkVersion } from '../capabilities/acp-fork-support'
+import { noteAcpChainsVersion } from '../capabilities/acp-chains-support'
 
 export async function checkAcpLaunchVersion(
   spec: AcpLaunchSpec,
@@ -18,6 +19,7 @@ export async function checkAcpLaunchVersion(
 ): Promise<AgentCliVersionCheck> {
   if (!spec.minimumVersions && !wantVersion) {
     noteAcpForkVersion(spec.agent, null)
+    noteAcpChainsVersion(spec.agent, null)
     return { status: 'unknown', version: null }
   }
   const result = await checkAgentCliVersion(
@@ -32,5 +34,6 @@ export async function checkAcpLaunchVersion(
     read
   )
   noteAcpForkVersion(spec.agent, result.version)
+  noteAcpChainsVersion(spec.agent, result.version)
   return result
 }

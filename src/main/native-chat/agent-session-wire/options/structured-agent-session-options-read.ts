@@ -1,4 +1,6 @@
 import { readAcpForkSupport } from '../../../acp/capabilities/acp-fork-support'
+import { readAcpChainsSupport } from '../../../acp/capabilities/acp-chains-support'
+import { ACP_HANDLE_TRANSPORT } from '../../../acp/session/acp-structured-agent-definitions'
 import { supportsSessionAccountUsage } from '../../../../shared/agent-session/lifecycle/accounts/agent-session-account-usage'
 import { structuredAgentSessionCatalogScopeOwned } from './structured-agent-session-catalog-reads'
 import { withinAgentModelCatalogRead } from '../../agent-model-catalog/agent-model-catalog-operation'
@@ -249,6 +251,11 @@ export async function readStructuredAgentSessionOptions(
         : capabilities?.fork === 'tip'
           ? (live?.forkSupport ?? readAcpForkSupport(agent))
           : 'unsupported',
+    // Only ACP providers initialize; their observed chain support rides the same agent+version cache.
+    chainsSupport:
+      context.deps.agents.definition(agent)?.handleTransport === ACP_HANDLE_TRANSPORT
+        ? (live?.chainsSupport ?? readAcpChainsSupport(agent))
+        : 'unsupported',
     ...(supportsSessionAccountUsage(record) ? { accountUsage: true as const } : {}),
     ...(live?.effortFixed
       ? {

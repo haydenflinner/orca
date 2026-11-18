@@ -1,5 +1,6 @@
 import { retryAcpRequest } from '../protocol/acp-request-retry'
 import { observeAcpForkSupport } from '../capabilities/acp-fork-support'
+import { observeAcpChainsSupport } from '../capabilities/acp-chains-support'
 import {
   assertStructuredAgentResolutionCurrent,
   type StructuredAgentResolutionOperation
@@ -72,6 +73,7 @@ export async function readSessionModels(
   const initialized = await connection.initialize()
   assertStructuredAgentResolutionCurrent(operation)
   observeAcpForkSupport(spec.agent, initialized)
+  observeAcpChainsSupport(spec.agent, initialized)
   const deletes = Boolean(initialized.agentCapabilities?.sessionCapabilities?.delete)
   if (!deletes && !listing.sessionFolderArgs && !listing.discardSession) {
     throw new Error(`${spec.agent} cannot delete a session, so it lists its models only in chats`)

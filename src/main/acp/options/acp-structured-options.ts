@@ -1,6 +1,7 @@
 import { acpEffortOption, acpSelectChoices } from './acp-select-choices'
 import { acpModelMenuModels, withFastModeOption } from './acp-model-menu'
 import { acpInitializeForkSupport } from '../capabilities/acp-fork-support'
+import { acpInitializeChainsSupport } from '../capabilities/acp-chains-support'
 import type { AgentSessionSlashCommand } from '../../../shared/agent-session/agent-session-wire'
 
 import type { AgentSessionOptionsResult } from '../../../shared/agent-session/options/protocol/agent-session-options-result'
@@ -44,6 +45,7 @@ export class AcpStructuredOptions {
   ) {}
 
   private forkSupport: AgentSessionOptionsResult['forkSupport'] = 'unknown'
+  private chainsSupport: AgentSessionOptionsResult['chainsSupport'] = 'unknown'
   private configOptions: SessionConfigOption[] = []
   private models: SessionModelState | null = null
   private commands: AgentSessionSlashCommand[] | undefined
@@ -185,6 +187,9 @@ export class AcpStructuredOptions {
   /** Each process proves its own built-ins; session rows alone cannot. */
   adoptInitialize(initialized: InitializeResponse): void {
     this.forkSupport = acpInitializeForkSupport(initialized)
+    this.chainsSupport = acpInitializeChainsSupport(initialized).chains
+      ? 'supported'
+      : 'unsupported'
     this.isBuiltin = this.dialect.builtinCommands?.(initialized) ?? (() => false)
     if (this.reportedCommands) {
       this.adoptCommands(this.reportedCommands)
@@ -240,7 +245,7 @@ export class AcpStructuredOptions {
   /** Native choices never establish an unobserved model's capability or configured default. */
   read(): Pick<
     AgentSessionOptionsResult,
-    'models' | 'current' | 'forkSupport' | 'fastModeSupport'
+    'models' | 'current' | 'forkSupport' | 'chainsSupport' | 'fastModeSupport'
   > {
     const modelOption = this.select('model')
     const effortOption = this.effortOption()
@@ -256,6 +261,7 @@ export class AcpStructuredOptions {
     const menu = {
       models,
       forkSupport: this.forkSupport,
+      chainsSupport: this.chainsSupport,
       current: {
         ...(currentModel ? { model: currentModel } : {}),
         ...(effortOption ? { effort: effortOption.currentValue } : {}),

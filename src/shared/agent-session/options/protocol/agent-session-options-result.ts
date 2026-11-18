@@ -29,6 +29,8 @@ export type AgentSessionOptionsResult = {
   rewind?: AgentSessionRewindSupport
   /** Whether this chat's agent copies its conversation natively; absent means unknown, never unsupported. */
   forkSupport?: 'unknown' | 'supported' | 'unsupported'
+  /** Whether the agent takes concurrent side-chain prompts; absent means an older host. */
+  chainsSupport?: 'unknown' | 'supported' | 'unsupported'
   conversationCommands?: readonly AgentSessionConversationCommand[]
   /** `/compact` takes instructions here; an older host omits this and refuses the field. */
   compactInstructions?: boolean
