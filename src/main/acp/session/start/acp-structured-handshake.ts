@@ -1,6 +1,10 @@
 import { withStructuredHistoryInvocation } from '../../../native-chat/agent-session-wire/acquisition/structured-agent-session-history-invocation'
 import { retryAcpRequest } from '../../protocol/acp-request-retry'
 import { observeAcpForkSupport } from '../../capabilities/acp-fork-support'
+import {
+  acpInitializeChainsSupport,
+  observeAcpChainsSupport
+} from '../../capabilities/acp-chains-support'
 import { withAcpStartupDiagnostic } from './acp-startup-diagnostic'
 // An ACP child's handshake, run after the host has published it: initialize, reopen the chat's
 // session or start a new one, then return its protocol facts to the host. A saved session the agent
@@ -73,6 +77,7 @@ export async function initializeAcpStructuredSession(
   const initialized = await connection.initialize()
   assertStarting()
   observeAcpForkSupport(spec.agent, initialized)
+  observeAcpChainsSupport(spec.agent, initialized)
   options.adoptInitialize(initialized)
   const meta = await spec.resolveSessionMeta?.({
     initialized,
@@ -277,6 +282,7 @@ export async function initializeAcpStructuredSession(
       withdrawRequests: () => prompts.withdrawAll(),
       lane: liveLane,
       agentName,
+      chains: acpInitializeChainsSupport(initialized).chains,
       compactCommand: spec.dialect.compactCommand,
       now,
       settle: onSettled,

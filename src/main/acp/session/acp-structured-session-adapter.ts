@@ -144,7 +144,8 @@ export class AcpStructuredSessionAdapter implements SessionAdapter {
         session.turns.dispatch({
           clientMessageId: input.clientMessageId,
           prompt,
-          requestedAt: input.requestedAt ?? this.now()
+          requestedAt: input.requestedAt ?? this.now(),
+          side: input.body.sentAs === 'side'
         })
       )
       await admitStructuredAgentSessionInput(input.admitFreshInput, commit)

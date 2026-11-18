@@ -4,6 +4,15 @@ import type { AgentJournalItemIdentity } from '../../../shared/agent-session/jou
 import type { AcpAgentError } from '../transport/acp-errors'
 import type { AcpStructuredConnection } from '../process/acp-structured-connection'
 import type { AcpStructuredLane } from '../journal/acp-structured-lane'
+import type { ContentBlock } from '../generated/acp-protocol.generated'
+
+/** An admitted send awaiting the provider; `side` asks for the agent's read-only chain. */
+export type AcpSend = {
+  clientMessageId: string
+  prompt: ContentBlock[]
+  requestedAt: number
+  side?: boolean
+}
 
 export type AcpDispatchSettlement = { clientMessageId: string } & (
   | { providerIdentity: AgentJournalItemIdentity }
@@ -16,6 +25,8 @@ export type AcpStructuredTurnsDeps = {
   withdrawRequests: () => void
   lane: AcpStructuredLane
   agentName: string
+  /** The agent takes concurrent prompts on a named side chain ("cognition.ai/chains"). */
+  chains?: boolean
   /** The agent's own command for /compact. */
   compactCommand?: string
   now: () => number

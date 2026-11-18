@@ -10,7 +10,7 @@ import {
   type AcpTurnEnding
 } from '../acp-dialects/acp-dialect'
 import type { AcpAgentError } from '../transport/acp-errors'
-import { acpTurnEndEvents, AcpPromptTurns } from './acp-prompt-turns'
+import { AcpPromptTurns } from './acp-prompt-turns'
 
 import { translateAcpRequest } from '../requests/acp-timeline-requests'
 import { AcpUrlElicitations } from '../requests/acp-url-elicitation'
@@ -87,6 +87,14 @@ export class AcpTimelineTranslator {
     return prompt
   }
 
+  /** Side prompts share the session's ownership; their frames attribute while they run alone. */
+  openSidePrompt(clientMessageId: string, at: number): { promptId: string; events: never[] } {
+    if (this.loading) {
+      throw new Error('ACP side prompt overlaps a load')
+    }
+    return this.prompts.openSide(clientMessageId, at)
+  }
+
   promptResult(
     clientMessageId: string,
     result: PromptResponse,
@@ -120,13 +128,24 @@ export class AcpTimelineTranslator {
   }
 
   private finishPrompt(clientMessageId: string, ending: AcpTurnEnding): ProviderTimelineEvent[] {
-    const prompt = this.prompts.current
-    if (prompt?.clientMessageId !== clientMessageId) {
+    const prompt = this.prompts.byMessage(clientMessageId)
+    if (prompt === undefined) {
       return []
+    }
+    if (prompt === this.prompts.side && !prompt.opened) {
+      // Late frames must not reopen the never-opened side turn.
+      this.started.set(prompt.turn, true)
+      const joinTurn = this.prompts.current?.opened ? this.prompts.current.turn : this.activeTurn
+      return this.prompts.finishUnopenedSide(prompt, ending, joinTurn)
     }
     return [
       ...this.start(prompt.turn, ending.at),
-      ...this.endTurn(prompt.turn, { ...ending, durationMs: prompt.durationMs })
+      ...this.prompts.endTurn(
+        prompt.turn,
+        { ...ending, durationMs: prompt.durationMs },
+        this.failures,
+        (turn) => this.end(turn)
+      )
     ]
   }
 
@@ -166,7 +185,8 @@ export class AcpTimelineTranslator {
       return this.elicitations.complete(params, at)
     }
     const extension = this.dialect.notification?.(method, params, at)
-    const open = this.prompts.current?.opened ? this.prompts.current.turn : this.activeTurn
+    // (Upstream ask: cognition.ai/chain on update _meta would make this attribution exact.)
+    const open = this.prompts.promptTurn(this.activeTurn)
     const child = this.children.notification(method, params, extension, this.loading, open, at)
     if (child) {
       return child
@@ -232,14 +252,13 @@ export class AcpTimelineTranslator {
     const end = extension?.end
     if (end && turn) {
       // Hook refusal ends immediately; normal completion waits for the prompt reply.
-      if (
-        this.prompts.current?.turn === turn &&
-        ['end_turn', 'cancelled'].includes(end.stopReason) &&
-        !end.hookBlock
-      ) {
-        this.prompts.current.durationMs = end.durationMs
+      const livePrompt = this.prompts.byTurn(turn)
+      if (livePrompt && ['end_turn', 'cancelled'].includes(end.stopReason) && !end.hookBlock) {
+        livePrompt.durationMs = end.durationMs
       } else {
-        events.push(...this.endTurn(turn, { ...end, at }))
+        events.push(
+          ...this.prompts.endTurn(turn, { ...end, at }, this.failures, (t) => this.end(t))
+        )
       }
       return events
     }
@@ -283,35 +302,20 @@ export class AcpTimelineTranslator {
     )
   }
 
-  // Write failure reasons before ending the turn so their rows join it.
-  private endTurn(turn: string, ending: AcpTurnEnding): ProviderTimelineEvent[] {
-    const events = this.prompts.endCompaction(turn, ending, this.failures) ?? [
-      ...this.failures.ended(turn, ending),
-      ...acpTurnEndEvents(this.options.sessionId, turn, ending)
-    ]
-    this.end(turn)
-    if (this.prompts.current?.turn === turn) {
-      this.prompts.finish()
-    }
-    return events
-  }
-
   protected start(
     turn: string,
     at: number,
     operation = this.ownership.operation()
   ): ProviderTimelineEvent[] {
-    if (
-      operation.settled(turn) ||
-      (this.prompts.current?.turn !== turn && this.started.has(turn))
-    ) {
+    if (operation.settled(turn) || (!this.prompts.tracks(turn) && this.started.has(turn))) {
       return []
     }
-    if (this.activeTurn && this.activeTurn !== turn) {
+    // A side turn streams beside the main turn; anything else still displaces the active one.
+    if (this.activeTurn && this.activeTurn !== turn && turn !== this.prompts.side?.turn) {
       this.end(this.activeTurn)
     }
     operation.open(turn)
-    if (turn === this.prompts.current?.turn) {
+    if (this.prompts.tracks(turn)) {
       const events = this.prompts.start(turn, at)
       // Late frames must not reopen or retarget this prompt.
       this.started.set(turn, true)

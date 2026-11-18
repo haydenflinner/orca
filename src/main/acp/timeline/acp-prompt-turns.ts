@@ -24,6 +24,8 @@ export const acpPromptTurnId = (clientMessageId: string): string => `prompt:${cl
 
 export class AcpPromptTurns {
   current?: AcpPromptTurn
+  /** The in-flight side-chain prompt; it runs concurrently with `current`. */
+  side?: AcpPromptTurn
   /** Retain the ended prompt so its reply can supply a late failure reason. */
   last?: AcpPromptTurn
 
@@ -33,6 +35,87 @@ export class AcpPromptTurns {
     private readonly agentName?: string
   ) {}
 
+  /** The prompt this turn belongs to, in either lane. */
+  byTurn(turn: string | undefined): AcpPromptTurn | undefined {
+    return this.current?.turn === turn
+      ? this.current
+      : this.side?.turn === turn
+        ? this.side
+        : undefined
+  }
+
+  /** True while a prompt in either lane owns this turn. */
+  tracks(turn: string): boolean {
+    return this.byTurn(turn) !== undefined
+  }
+
+  /** The prompt answering this send, in either lane. */
+  byMessage(clientMessageId: string): AcpPromptTurn | undefined {
+    return this.current?.clientMessageId === clientMessageId
+      ? this.current
+      : this.side?.clientMessageId === clientMessageId
+        ? this.side
+        : undefined
+  }
+
+  /** Devin puts no chain id on session/update frames, so a lone side prompt owns them;
+   *  overlapping frames fold into the main prompt's turn. */
+  promptTurn(activeTurn: string | undefined): string | undefined {
+    if (this.side && !this.current && (activeTurn === undefined || activeTurn === this.side.turn)) {
+      return this.side.turn
+    }
+    return this.current?.opened ? this.current.turn : activeTurn
+  }
+
+  /** Retire whichever lane's prompt this turn ended. */
+  finishTurn(turn: string): void {
+    if (this.current?.turn === turn) {
+      this.finish()
+    }
+    if (this.side?.turn === turn) {
+      this.finishSide()
+    }
+  }
+
+  /** An unopened side turn folds its acceptance into an open turn; with none, it still opens
+   *  and ends so the send's acceptance lands. */
+  finishUnopenedSide(
+    prompt: AcpPromptTurn,
+    ending: AcpTurnEnding,
+    joinTurn: string | undefined
+  ): ProviderTimelineEvent[] {
+    this.finishSide()
+    const accepted = {
+      type: 'input.accepted' as const,
+      clientMessageId: prompt.clientMessageId,
+      requestedAt: prompt.requestedAt
+    }
+    if (joinTurn !== undefined) {
+      return [{ ...accepted, join: { thread: this.sessionId, turn: joinTurn } }]
+    }
+    return [
+      { type: 'turn.open', turn: prompt.turn, at: ending.at },
+      { ...accepted, join: { thread: this.sessionId, turn: prompt.turn } },
+      ...acpTurnEndEvents(this.sessionId, prompt.turn, ending)
+    ]
+  }
+
+  // Write failure reasons before ending the turn so their rows join it; onEnd retires ownership.
+  endTurn(
+    turn: string,
+    ending: AcpTurnEnding,
+    failures: AcpTurnFailures,
+    onEnd: (turn: string) => void
+  ): ProviderTimelineEvent[] {
+    const events = this.endCompaction(turn, ending, failures) ?? [
+      ...failures.ended(turn, ending),
+      ...acpTurnEndEvents(this.sessionId, turn, ending)
+    ]
+    onEnd(turn)
+    this.finishTurn(turn)
+    return events
+  }
+
   failure(
     clientMessageId: string,
     error: Error,
@@ -40,7 +123,7 @@ export class AcpPromptTurns {
     failures: AcpTurnFailures
   ): AcpTurnEnding | ProviderTimelineEvent[] {
     const ending = acpPromptFailureEnding(this.dialect, error, at)
-    if (this.current?.clientMessageId !== clientMessageId) {
+    if (this.byMessage(clientMessageId) === undefined) {
       // A late answer may supply a failure reason missing from the provider's end.
       return this.last?.clientMessageId === clientMessageId && failures.has(this.last.turn)
         ? failures.row(this.last.turn, ending)
@@ -72,6 +155,16 @@ export class AcpPromptTurns {
     this.current = { clientMessageId, turn, requestedAt: at, opened: false }
     const injected = this.dialect.injectedPromptIdentity === true
     return { promptId: turn, events: injected ? [] : this.start(turn, at) }
+  }
+
+  /** The side chain serializes its own lane; its turn opens lazily on the first attributed frame. */
+  openSide(clientMessageId: string, at: number): { promptId: string; events: never[] } {
+    if (this.side) {
+      throw new Error('ACP side prompt overlaps a side prompt')
+    }
+    const turn = acpPromptTurnId(clientMessageId)
+    this.side = { clientMessageId, turn, requestedAt: at, opened: false }
+    return { promptId: turn, events: [] }
   }
 
   compacting(turn: string | undefined): AcpPromptTurn | undefined {
@@ -115,18 +208,28 @@ export class AcpPromptTurns {
     this.current = undefined
   }
 
+  finishSide(): void {
+    this.last = this.side ?? this.last
+    this.side = undefined
+  }
+
   /** Only discard refusals received before the turn opens. */
   refuse(clientMessageId: string): boolean {
-    if (this.current?.clientMessageId !== clientMessageId || this.current.opened) {
-      return false
+    if (this.current?.clientMessageId === clientMessageId && !this.current.opened) {
+      this.current = undefined
+      return true
     }
-    this.current = undefined
-    return true
+    if (this.side?.clientMessageId === clientMessageId && !this.side.opened) {
+      this.side = undefined
+      return true
+    }
+    return false
   }
 
   start(turn: string, at: number): ProviderTimelineEvent[] {
-    const prompt = this.current
-    if (prompt?.turn !== turn || prompt.opened) {
+    const prompt =
+      this.current?.turn === turn ? this.current : this.side?.turn === turn ? this.side : undefined
+    if (prompt === undefined || prompt.opened) {
       return []
     }
     prompt.opened = true

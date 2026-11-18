@@ -1,4 +1,4 @@
-import type { AcpStructuredTurnsDeps } from './acp-turn-dispatch-contract'
+import type { AcpSend, AcpStructuredTurnsDeps } from './acp-turn-dispatch-contract'
 // Steers wait for the active prompt to answer cancellation; agent-initiated turns accept sends directly.
 
 import {
@@ -11,21 +11,24 @@ import type {
   StructuredAgentSessionCommandRun
 } from '../../native-chat/agent-session-wire/providers/structured-agent-session-adapter'
 import { acpCompactPrompt } from './acp-compaction-turn'
+import { AcpSideSends } from './acp-structured-side-sends'
 import {
-  AcpAgentError,
-  AcpAuthRequiredError,
-  AcpConnectionClosedError
-} from '../transport/acp-errors'
-import { acpPromptRejection } from './acp-prompt-failure'
-import type { ContentBlock } from '../generated/acp-protocol.generated'
+  acpAgentTurnFailed,
+  acpTurnAnswered,
+  acpTurnErrored,
+  type AcpTurnAnswerHost
+} from './acp-structured-turn-answers'
+import { AcpAuthRequiredError } from '../transport/acp-errors'
 
-type Send = { clientMessageId: string; prompt: ContentBlock[]; requestedAt: number }
+type Send = AcpSend
 
 export class AcpStructuredTurns {
   private active: Send | null = null
   // One cancel per prompt; failed writes allow a later steer to retry.
   private steerCancelled: Send | null = null
   private readonly steers: Send[] = []
+  private readonly side: AcpSideSends
+  private readonly answers: AcpTurnAnswerHost
   private readonly unsettled = new Set<string>()
   private readonly idleWaiters = new Set<() => void>()
   private ended = false
@@ -35,7 +38,31 @@ export class AcpStructuredTurns {
   // Counts Stops: finish() clears stopAt before a preparing steer can see it.
   private withdrawals = 0
 
-  constructor(private readonly deps: AcpStructuredTurnsDeps) {}
+  constructor(private readonly deps: AcpStructuredTurnsDeps) {
+    this.answers = {
+      ...deps,
+      inFlight: (send) => this.inFlight(send),
+      accept: (clientMessageId) => this.accept(clientMessageId),
+      reject: (clientMessageId, fact) => this.reject(clientMessageId, fact),
+      finish: (send) => this.finish(send),
+      markEnded: () => {
+        this.ended = true
+      }
+    }
+    this.side = new AcpSideSends(deps, {
+      ended: () => this.ended,
+      started: () => {
+        this.stopAt = null
+      },
+      answered: (send, result) => acpTurnAnswered(this.answers, send, result),
+      errored: (send, error) => acpTurnErrored(this.answers, send, error),
+      idle: () => {
+        if (this.active === null) {
+          this.notifyIdle()
+        }
+      }
+    })
+  }
 
   capturePendingSend(clientMessageId: string): () => boolean {
     const send = this.active?.clientMessageId === clientMessageId ? this.active : null
@@ -43,7 +70,7 @@ export class AcpStructuredTurns {
   }
 
   get running(): boolean {
-    return this.active !== null
+    return this.active !== null || this.side.running
   }
 
   /** Interactive requests wait for the person, including in turns the agent began itself, unless Stop or a steer cuts them short. */
@@ -60,7 +87,7 @@ export class AcpStructuredTurns {
   }
 
   get holdsSteers(): boolean {
-    return this.steers.length > 0 || this.preparingSteers > 0
+    return this.steers.length > 0 || this.preparingSteers > 0 || this.side.queued
   }
 
   get withdrawalEpoch(): number {
@@ -103,7 +130,7 @@ export class AcpStructuredTurns {
   }
 
   whenIdle(signal?: AbortSignal): Promise<void> {
-    if (!this.active || signal?.aborted) {
+    if ((!this.active && !this.side.running) || signal?.aborted) {
       return Promise.resolve()
     }
     return new Promise((resolve) => {
@@ -132,6 +159,11 @@ export class AcpStructuredTurns {
 
   dispatch(send: Send): void {
     this.unsettled.add(send.clientMessageId)
+    // Side sends take the agent's read-only chain concurrently; anything else steers as before.
+    if (send.side === true && this.deps.chains === true) {
+      this.side.dispatch(send)
+      return
+    }
     if (this.active) {
       this.steers.push(send)
       this.cancelForSteer()
@@ -142,7 +174,7 @@ export class AcpStructuredTurns {
 
   /** The host owns compaction-message settlement; reuse its open command turn. */
   async compact(command: StructuredAgentSessionCommandRun): Promise<AgentSessionCommandAdmission> {
-    if (this.active || this.ended) {
+    if (this.active || this.side.running || this.ended) {
       throw new Error(`${this.deps.agentName} is still working`)
     }
     const { lane } = this.deps
@@ -179,7 +211,7 @@ export class AcpStructuredTurns {
 
   private withdrawSteers(): boolean {
     this.withdrawals += 1
-    const withdrawn = this.steers.splice(0)
+    const withdrawn = [...this.steers.splice(0), ...this.side.withdraw()]
     for (const send of withdrawn) {
       this.reject(
         send.clientMessageId,
@@ -189,17 +221,21 @@ export class AcpStructuredTurns {
     return withdrawn.length > 0
   }
 
-  /** Teardown rejects held steers; an unconfirmed active send remains unknown. */
+  /** Teardown rejects held steers; unconfirmed in-flight sends remain unknown. */
   end(reason: string, cause?: Error): void {
     this.ended = true
-    for (const send of this.steers.splice(0)) {
+    for (const send of [...this.steers.splice(0), ...this.side.withdraw()]) {
       this.reject(send.clientMessageId, agentSessionFailureFact('providerExited'))
     }
-    const active = this.active
-    if (active && cause instanceof AcpAuthRequiredError) {
-      this.agentFailed(active, cause)
-    } else if (active && this.unsettled.delete(active.clientMessageId)) {
-      this.deps.settle({ clientMessageId: active.clientMessageId, state: 'unknown', reason })
+    for (const inFlight of [this.active, this.side.takeInFlight()]) {
+      if (!inFlight) {
+        continue
+      }
+      if (cause instanceof AcpAuthRequiredError) {
+        acpAgentTurnFailed(this.answers, inFlight, cause)
+      } else if (this.unsettled.delete(inFlight.clientMessageId)) {
+        this.deps.settle({ clientMessageId: inFlight.clientMessageId, state: 'unknown', reason })
+      }
     }
     this.active = null
     this.steerCancelled = null
@@ -216,6 +252,10 @@ export class AcpStructuredTurns {
     this.run(send, opened.promptId)
   }
 
+  private inFlight(send: Send): boolean {
+    return send.side === true ? this.side.inFlight(send) : this.active === send
+  }
+
   private run(send: Send, promptId: string): void {
     const { lane } = this.deps
     // Inject identity only for dialects that echo it on turn events.
@@ -227,58 +267,16 @@ export class AcpStructuredTurns {
       this.cancelForSteer()
     }
     answered.then(
-      (result) => {
-        if (this.active !== send) {
-          return
-        }
-        lane.apply(lane.translator.promptResult(send.clientMessageId, result, this.deps.now()))
-        this.accept(send.clientMessageId)
-        this.finish(send)
-      },
-      (error: unknown) => {
-        if (this.active !== send || error instanceof AcpConnectionClosedError) {
-          // Connection teardown owns unknown-send settlement.
-          return
-        }
-        if (!(error instanceof AcpAgentError)) {
-          // Unreadable replies fail the turn but allow the next send.
-          lane.apply(
-            lane.translator.promptFailed(
-              send.clientMessageId,
-              error instanceof Error ? error : new Error(String(error)),
-              this.deps.now()
-            )
-          )
-          this.accept(send.clientMessageId)
-          this.finish(send)
-          return
-        }
-        this.agentFailed(send, error)
-      }
+      (result) => acpTurnAnswered(this.answers, send, result),
+      (error: unknown) => acpTurnErrored(this.answers, send, error)
     )
   }
 
-  private agentFailed(send: Send, error: AcpAgentError): void {
-    const { lane } = this.deps
-    const refusal = lane.translator.promptRefused(send.clientMessageId, error)
-    // Also retires the proof of a model the agent turned out not to have.
-    const noModel = this.deps.modelRefusal?.(error)
-    if (refusal !== null) {
-      const signedOut = lane.translator.authenticationRequired(error)
-      this.reject(send.clientMessageId, acpPromptRejection(refusal, signedOut, noModel))
-    } else {
-      lane.apply(lane.translator.promptFailed(send.clientMessageId, error, this.deps.now()))
-    }
-    const lost = lane.translator.sessionLost(error)
-    // Held steers must not reach the dead session.
-    this.ended ||= lost
-    this.finish(send)
-    if (lost) {
-      this.deps.sessionLost(error)
-    }
-  }
-
   private finish(send: Send): void {
+    if (send.side === true) {
+      this.side.finish(send)
+      return
+    }
     if (this.active === send) {
       this.active = null
       this.stopAt = null
@@ -289,7 +287,7 @@ export class AcpStructuredTurns {
     const next = this.ended ? undefined : this.steers.shift()
     if (next) {
       this.start(next)
-    } else if (!this.active) {
+    } else if (!this.active && !this.side.running) {
       this.notifyIdle()
     }
   }
