@@ -1,5 +1,9 @@
 import { agentSessionInteractionCommand } from '../../../../../../shared/agent-session/options/permissions/agent-session-interaction-mode'
 import type { AgentJournalSkillRef } from '../../../../../../shared/agent-session/journal/agent-session-journal-types'
+import {
+  isNativeChatSideChatCommand,
+  parseNativeChatSideChatDraft
+} from '../../../../../../shared/native-chat/input/commands/native-chat-side-chat-command'
 import { structuredAgentSessionBlocksTooLarge } from '../../../../../../shared/rpc-contract/structured-agent-session/structured-agent-session-message-params'
 import { structuredAgentSessionSendBody } from '../../../../../../shared/agent-session/requests/structured-agent-session-send-mutation'
 import { AGENT_SESSION_MESSAGE_TOO_LARGE_PARTS } from '../../../../../../shared/agent-session/failures/agent-session-refusal-notice'
@@ -37,9 +41,20 @@ export async function dispatchNativeChatStructuredComposerText(
   if (handled) {
     return { ...command, revealsTranscript: false }
   }
+  // Where Orca cannot fork, /btw belongs to the agent: strip the command and mark the question
+  // for its side chain so the send does not cancel the running turn. Text-only, and a same-named
+  // picked skill keeps the draft.
+  const sideDraft =
+    transport.sideChat === undefined &&
+    attachments.length === 0 &&
+    !skills.some((skill) => isNativeChatSideChatCommand(skill.name))
+      ? parseNativeChatSideChatDraft(prompt)
+      : null
+  const side = sideDraft !== null && sideDraft.question.length > 0
+  const text = side && sideDraft ? sideDraft.question : prompt
   // The composer still owns its draft until admission, so refusal must precede the handoff.
   const body = structuredAgentSessionSendBody(
-    prompt,
+    text,
     attachments.map(({ path }) => ({ path, previewUri: '' }))
   )
   if (structuredAgentSessionBlocksTooLarge(body.blocks)) {
@@ -49,11 +64,15 @@ export async function dispatchNativeChatStructuredComposerText(
       revealsTranscript: false
     }
   }
-  const request = { ...(skills.length > 0 ? { skills } : {}), ...intent }
+  const request = {
+    ...(skills.length > 0 ? { skills } : {}),
+    ...(side ? { side: true as const } : {}),
+    ...intent
+  }
   const admission =
     Object.keys(request).length > 0
-      ? transport.send(prompt, attachments, request)
-      : transport.send(prompt, attachments)
+      ? transport.send(text, attachments, request)
+      : transport.send(text, attachments)
   if (admission instanceof Promise) {
     onPending?.()
   }

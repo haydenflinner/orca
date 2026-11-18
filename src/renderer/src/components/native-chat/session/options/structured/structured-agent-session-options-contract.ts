@@ -40,6 +40,8 @@ export type StructuredSessionConversationSupport = {
   rewind: AgentSessionRewindSupport
   /** Whether the installed agent copies its conversation natively; absent means unknown. */
   forkSupport?: AgentSessionOptionsResult['forkSupport']
+  /** Whether the agent takes `/btw` on a read-only side chain; absent means unknown. */
+  chainsSupport?: AgentSessionOptionsResult['chainsSupport']
   /** The fence the read answered for; rewind support is only that runtime's. */
   fence: number | null
 }

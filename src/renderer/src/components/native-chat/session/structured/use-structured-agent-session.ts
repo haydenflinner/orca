@@ -101,6 +101,7 @@ export function useStructuredAgentSession(args: StructuredAgentSessionViewArgs) 
     contextUsage: usageSupport,
     rewind: rewindSupport,
     forkSupport,
+    chainsSupport,
     sessionSupport
   } = useStructuredAgentSessionOptions({
     agent,
@@ -253,6 +254,8 @@ export function useStructuredAgentSession(args: StructuredAgentSessionViewArgs) 
     contextFloor,
     /** The options read's word on whether this chat's agent forks; absent until it answers. */
     forkSupport: transportEnabled ? forkSupport : undefined,
+    /** The options read's word on whether this chat's agent answers /btw on a side chain. */
+    chainsSupport: transportEnabled ? chainsSupport : undefined,
     /** The host's newest turn record, which places a live turn whose record is not loaded. */
     latestTurn: transportState.latestTurn,
     /** The host's prompts still waiting on the person and its working answer. */

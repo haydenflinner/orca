@@ -21,12 +21,18 @@ import { promptHasAttachmentReferences } from '../editor/native-chat-prompt-docu
 
 export function withNativeChatSideChatRows(
   commands: readonly SlashCommandSuggestion[],
-  notReadyReason: string | null
+  notReadyReason: string | null,
+  agentChain?: boolean
 ): SlashCommandSuggestion[] {
-  const side = translate(
-    'components.native-chat.sideChat.description',
-    'Ask a side question in a fork beside this chat'
-  )
+  const side = agentChain
+    ? translate(
+        'components.native-chat.sideChat.chainDescription',
+        'Ask a side question without interrupting this chat'
+      )
+    : translate(
+        'components.native-chat.sideChat.description',
+        'Ask a side question in a fork beside this chat'
+      )
   return withNativeChatSideChatCommands(commands, {
     side,
     btw: side,
@@ -51,7 +57,7 @@ export function useNativeChatSideChatCommand(args: {
   structuredTransport:
     | Pick<
         NativeChatStructuredComposerTransport,
-        'sessionId' | 'onError' | 'capturePresentation' | 'sideChat'
+        'sessionId' | 'onError' | 'capturePresentation' | 'sideChat' | 'agentSideChain'
       >
     | undefined
   picker: Pick<NativeChatPickerState, 'isPickedSkill' | 'completeItem'> & {
@@ -63,6 +69,8 @@ export function useNativeChatSideChatCommand(args: {
   const { autocomplete, isPickedSkill, completeItem } = args.picker
   const { setCaret } = args.editor
   const sideChat = structuredTransport?.sideChat
+  // Where Orca cannot fork, an agent that answers on a side chain still offers the rows.
+  const agentSideChain = sideChat === undefined && structuredTransport?.agentSideChain === true
   const matchesDraft = useCallback(
     (draft: string) =>
       sideChat !== undefined &&
@@ -119,16 +127,20 @@ export function useNativeChatSideChatCommand(args: {
       (item: TItem) => {
         const leading = autocomplete.mode === 'slash' && autocomplete.dispatchable === true
         const name = item.kind === 'command' && item.orcaOwned ? item.name : null
-        if (leading && sideChat && isNativeChatSideChatCommand(name)) {
+        if (
+          leading &&
+          (sideChat !== undefined || agentSideChain) &&
+          isNativeChatSideChatCommand(name)
+        ) {
           // An unavailable row says why; picking it does nothing.
-          if (sideChat.notReadyReason === null) {
+          if ((sideChat?.notReadyReason ?? null) === null) {
             completeItem(item)
           }
         } else {
           pick(item)
         }
       },
-    [autocomplete, completeItem, sideChat]
+    [autocomplete, agentSideChain, completeItem, sideChat]
   )
   return { matchesDraft, consume, interceptPick }
 }

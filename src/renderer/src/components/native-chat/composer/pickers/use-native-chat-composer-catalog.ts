@@ -32,6 +32,8 @@ export function useNativeChatComposerCatalog(
   const fork = structuredTransport?.fork !== undefined
   const sideChat = structuredTransport?.sideChat !== undefined
   const sideChatNotReady = structuredTransport?.sideChat?.notReadyReason ?? null
+  // Without an Orca fork the command belongs to an agent that answers it on a side chain.
+  const agentSideChain = !sideChat && structuredTransport?.agentSideChain === true
   const agentCommands = useMemo(() => {
     if (!structured) {
       return getVerifiedNativeChatCommands(agent)
@@ -48,10 +50,13 @@ export function useNativeChatComposerCatalog(
       accountUsage,
       fork
     )
-    return sideChat ? withNativeChatSideChatRows(commands, sideChatNotReady) : commands
+    return sideChat || agentSideChain
+      ? withNativeChatSideChatRows(commands, sideChatNotReady, agentSideChain)
+      : commands
   }, [
     accountUsage,
     agent,
+    agentSideChain,
     fork,
     sideChat,
     sideChatNotReady,
