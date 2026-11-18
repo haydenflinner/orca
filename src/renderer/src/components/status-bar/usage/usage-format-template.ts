@@ -3,6 +3,7 @@ import type {
   RateLimitWindow
 } from '../../../../../shared/agent-usage/rate-limits/rate-limit-types'
 import { formatResetDuration } from '../../../../../shared/agent-usage/rate-limits/rate-limit-reset-format'
+import { getUsageWindowElapsedPercent } from '../../../../../shared/agent-usage/display/usage-window-elapsed'
 import {
   getDisplayedUsagePercentage,
   type UsagePercentageDisplay
@@ -90,6 +91,8 @@ export function buildUsageFormatValues(
     values[`${key}.reset`] =
       window?.resetsAt != null ? formatResetDuration(window.resetsAt - options.now) : ''
     values[`${key}.resetAt`] = window?.resetsAt != null ? resetClock(window.resetsAt, options) : ''
+    const elapsed = window ? getUsageWindowElapsedPercent(window, options.now) : null
+    values[`${key}.elapsed`] = elapsed !== null ? `${Math.round(elapsed)}%` : ''
   }
   const buckets = (p.buckets ?? [])
     .filter((bucket) => BUCKET_ORDER.includes(bucket.name))

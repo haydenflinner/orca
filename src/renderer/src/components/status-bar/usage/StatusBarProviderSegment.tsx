@@ -17,7 +17,7 @@ import { formatCurrencyAmount } from '../../../../../shared/agent-usage/display/
 import { formatCreditCount } from '../../../../../shared/agent-usage/display/credit-count-format'
 import { ProviderIcon } from './provider-usage-panel'
 import { USAGE_WARNING_PERCENT } from './usage-health-tone'
-import { UsageBar } from './usage-meter'
+import { UsageBar, UsagePaceFigure } from './usage-meter'
 import { getProviderDisplayName } from '../../../../../shared/agent-usage/display/usage-provider-windows'
 import { getOwnerNotSetUpLabelParts } from './owner-not-set-up-copy'
 import {
@@ -32,6 +32,7 @@ import { useTranslate, useIntlLocale, type Translate } from '@/i18n/use-translat
 import { getStatusBarUsageSections } from '../composition/status-bar-usage-sections'
 import { GroupedPoolUsage } from './usage-grouped-pools'
 import { formatStatusBarSectionLabel } from './usage-pool-label'
+import { formatWindowLabel } from './rate-limit-window-localized-label'
 import { isGroupedUsagePool } from '../../../../../shared/agent-usage/display/grouped-usage-pool'
 import { useResetCountdownClock } from '@/components/status-bar/usage/useResetCountdownClock'
 import { useNow } from '@/lib/window-activity/use-now'
@@ -279,6 +280,9 @@ export function ProviderSegment({
             .map((bucket) => bucket.resetsAt)
         : []
   )
+  // Pace pairs the headline quota % with the elapsed % of its period; minute ticks keep it honest.
+  const paceWindow = !template && tightest?.window.resetsAt != null ? tightest.window : null
+  const paceNow = useNow(60_000, paceWindow !== null)
 
   // Why static: unfocused windows never poll, so a pending chip's pulse would redraw the compositor indefinitely.
   if (!p || p.status === 'idle' || (p.status === 'fetching' && !tightest)) {
@@ -357,6 +361,16 @@ export function ProviderSegment({
           </React.Fragment>
         ))
       )}
+      {paceWindow ? (
+        <>
+          <span className="text-muted-foreground">·</span>
+          <UsagePaceFigure
+            window={paceWindow}
+            label={formatWindowLabel(paceWindow.windowMinutes)}
+            now={paceNow}
+          />
+        </>
+      ) : null}
       {!template && showBalance && p.extraUsage ? (
         <>
           <span className="text-muted-foreground">·</span>

@@ -5922,6 +5922,10 @@
           "UsageDisplayToggle": {
             "showRemaining": "Show remaining usage",
             "showUsed": "Show used usage"
+          },
+          "UsagePace": {
+            "labeledTitle": "{{percent}}% of the {{label}} period elapsed",
+            "title": "{{percent}}% of the period elapsed"
           }
         }
       },
@@ -14499,7 +14503,8 @@
             "reset": "time until reset, e.g. 3h 15m",
             "resetAt": "reset clock time, e.g. 20:50",
             "buckets": "Gemini model buckets",
-            "optional": "dropped when a placeholder inside is empty"
+            "optional": "dropped when a placeholder inside is empty",
+            "elapsed": "percentage of the window period already elapsed"
           }
         },
         "RepositoryRemoveProjectSection": {

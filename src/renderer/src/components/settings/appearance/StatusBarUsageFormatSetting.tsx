@@ -92,6 +92,13 @@ export function StatusBarUsageFormatSetting({
       )
     ],
     [
+      '{5h.elapsed}',
+      t(
+        'auto.components.settings.StatusBarUsageFormatSetting.placeholder.elapsed',
+        'percentage of the window period already elapsed'
+      )
+    ],
+    [
       '{buckets}',
       t(
         'auto.components.settings.StatusBarUsageFormatSetting.placeholder.buckets',

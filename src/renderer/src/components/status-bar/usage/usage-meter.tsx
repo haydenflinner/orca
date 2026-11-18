@@ -1,15 +1,17 @@
 import React from 'react'
-import { ArrowUpDown } from 'lucide-react'
+import { ArrowUpDown, Hourglass } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { DropdownMenuItem } from '@/components/ui/dropdown-menu'
 import { useTranslate } from '@/i18n/use-translate'
 import { cn } from '@/lib/class-names'
 import { useAppStore } from '../../../store'
+import type { RateLimitWindow } from '../../../../../shared/agent-usage/rate-limits/rate-limit-types'
 import {
   getDisplayedUsagePercentage,
   normalizeUsagePercentageDisplay,
   type UsagePercentageDisplay
 } from '../../../../../shared/agent-usage/display/usage-percentage-display'
+import { getUsageWindowElapsedPercent } from '../../../../../shared/agent-usage/display/usage-window-elapsed'
 import { formatBareUsagePercentage } from './usage-percentage-label'
 import { usageBarClass, type UsageBarTone } from './usage-health-tone'
 
@@ -57,6 +59,52 @@ export function UsageValue({
   return (
     <span className={cn('tabular-nums', className)}>
       {formatBareUsagePercentage(usedPercent, display, t)}
+    </span>
+  )
+}
+
+/**
+ * Muted hourglass + n% figure: n% of the window's period has elapsed, so the quota % beside it reads as pace.
+ * Null when the window's period bounds are unknown.
+ */
+export function UsagePaceFigure({
+  window,
+  now,
+  label,
+  className
+}: {
+  window: RateLimitWindow
+  now: number
+  /** Window name for the tooltip, e.g. "5h" or "week". */
+  label?: string
+  className?: string
+}): React.JSX.Element | null {
+  const t = useTranslate()
+  const elapsed = getUsageWindowElapsedPercent(window, now)
+  if (elapsed === null) {
+    return null
+  }
+  const percent = Math.round(elapsed)
+  const title = label
+    ? t(
+        'auto.components.status.bar.UsagePace.labeledTitle',
+        '{{percent}}% of the {{label}} period elapsed',
+        { percent, label }
+      )
+    : t('auto.components.status.bar.UsagePace.title', '{{percent}}% of the period elapsed', {
+        percent
+      })
+  return (
+    <span
+      data-usage-pace
+      title={title}
+      className={cn(
+        'inline-flex shrink-0 items-center gap-0.5 tabular-nums text-muted-foreground',
+        className
+      )}
+    >
+      <Hourglass aria-hidden="true" className="size-[9px]" />
+      {percent}%
     </span>
   )
 }
