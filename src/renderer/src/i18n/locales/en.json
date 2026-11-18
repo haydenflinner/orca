@@ -775,7 +775,8 @@
         "gitBlameKeywordBlame": "blame",
         "gitBlameKeywordAuthor": "author",
         "gitBlameKeywordCommit": "commit",
-        "gitBlameToggleDescription": "Show the author and age of the cursor line. Click it to open the commit."
+        "gitBlameToggleDescription": "Show the author and age of the cursor line. Click it to open the commit.",
+        "devinToggleDescription": "Show Devin daily and weekly plan quota from the Devin CLI sign-in."
       },
       "menuBarIcon": {
         "description": "Keep an Orca shortcut and activity indicator in the macOS menu bar.",
@@ -5461,7 +5462,8 @@
             "staleCodexSessions_one": "{{count}} Codex session is still on the old account.",
             "staleCodexSessions_other": "{{count}} Codex sessions are still on the old account.",
             "windowWeeks": "{{value0}}wk",
-            "museUsageMenu": "Muse Usage"
+            "museUsageMenu": "Muse Usage",
+            "devinUsageMenu": "Devin Usage"
           },
           "StatusBarUsageEmptyCta": {
             "828c764a79": "Connect an account",
@@ -10807,7 +10809,12 @@
               "title": "Show search button",
               "description": "Show the Search button at the top of the left sidebar. The worktree palette shortcut still works when hidden."
             },
-            "search": "search"
+            "search": "search",
+            "devinUsage": "Devin usage",
+            "devinUsageDescription": "Show Devin plan quota in the status bar.",
+            "devin": "devin",
+            "quota": "quota",
+            "cognition": "cognition"
           }
         },
         "auto": {

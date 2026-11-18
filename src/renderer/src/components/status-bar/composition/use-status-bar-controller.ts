@@ -6,7 +6,11 @@ import type { ProviderRateLimits } from '../../../../../shared/agent-usage/rate-
 import { normalizeUsagePercentageDisplay } from '../../../../../shared/agent-usage/display/usage-percentage-display'
 import { normalizeStatusBarUsageMode } from '../../../../../shared/status-bar/status-bar-usage-mode'
 import { isStatusBarItemAvailable } from './status-bar-agent-gating'
-import { getVisibleUsageProvider, isUsageEmptyState } from './status-bar-provider-visibility'
+import {
+  getVisibleUsageProvider,
+  isUsageEmptyState,
+  resolveUsageProviderSettings
+} from './status-bar-provider-visibility'
 import {
   getUsageProviderAccountsSectionId,
   usageRowSignInOpensSettings
@@ -19,6 +23,7 @@ import {
   useOwnerUsageRateLimits
 } from '../usage/use-owner-usage-rate-limits'
 import { isOwnerNotSetUpPlaceholder } from '../usage/owner-usage-rate-limits'
+import type { StatusBarItem } from '../../../../../shared/ui-chrome/ui-chrome-types'
 import { useTranslate } from '@/i18n/use-translate'
 
 export function useStatusBarController(floatingTerminalOpen: boolean) {
@@ -111,9 +116,20 @@ export function useStatusBarController(floatingTerminalOpen: boolean) {
     return null
   }
 
-  const { claude, codex, gemini, opencodeGo, kimi, antigravity, minimax, grok, cursor, zcode } =
-    rateLimits
-  const muse = rateLimits.muse
+  const {
+    claude,
+    codex,
+    gemini,
+    opencodeGo,
+    kimi,
+    antigravity,
+    minimax,
+    grok,
+    cursor,
+    zcode,
+    muse,
+    devin
+  } = rateLimits
 
   // Antigravity has no saved credential; the checked item and detected CLI establish setup.
   const antigravityUsageConfigured =
@@ -121,16 +137,12 @@ export function useStatusBarController(floatingTerminalOpen: boolean) {
     statusBarItems.includes('antigravity') &&
     isStatusBarItemAvailable('antigravity', detectedAgentIds)
   // Use owner-specific durable setup flags; viewer credentials cannot establish remote configuration.
-  const usageSettings = {
-    ...(remoteOwned ? {} : settings),
+  const usageSettings = resolveUsageProviderSettings(
+    settings,
+    remoteOwned,
     antigravityUsageConfigured,
-    minimaxCookieConfigured: rateLimits.minimaxCookieConfigured,
-    minimaxApiKeyConfigured: rateLimits.minimaxApiKeyConfigured,
-    opencodeGoApiKeyConfigured: rateLimits.opencodeGoApiKeyConfigured,
-    grokAuthConfigured: rateLimits.grokAuthConfigured,
-    cursorAuthConfigured: rateLimits.cursorAuthConfigured,
-    zcodePlanApiKeyConfigured: rateLimits.zcodePlanApiKeyConfigured
-  }
+    rateLimits
+  )
   const visibleClaude = getVisibleUsageProvider('claude', claude, usageSettings)
   const visibleCodex = getVisibleUsageProvider('codex', codex, usageSettings)
   const visibleGemini = getVisibleUsageProvider('gemini', gemini, usageSettings)
@@ -141,32 +153,19 @@ export function useStatusBarController(floatingTerminalOpen: boolean) {
   const visibleCursor = getVisibleUsageProvider('cursor', cursor, usageSettings)
   const visibleZcode = getVisibleUsageProvider('zcode', zcode, usageSettings)
   const visibleMuse = getVisibleUsageProvider('muse', muse, usageSettings)
-  const showClaude =
-    visibleClaude !== null &&
-    statusBarItems.includes('claude') &&
-    isStatusBarItemAvailable('claude', detectedAgentIds)
-  const showCodex =
-    visibleCodex !== null &&
-    statusBarItems.includes('codex') &&
-    isStatusBarItemAvailable('codex', detectedAgentIds)
-  const showGemini =
-    visibleGemini !== null &&
-    statusBarItems.includes('gemini') &&
-    isStatusBarItemAvailable('gemini', detectedAgentIds)
-  const showKimi =
-    visibleKimi !== null &&
-    statusBarItems.includes('kimi') &&
-    isStatusBarItemAvailable('kimi', detectedAgentIds)
-  const showAntigravity =
-    visibleAntigravity !== null &&
-    statusBarItems.includes('antigravity') &&
-    isStatusBarItemAvailable('antigravity', detectedAgentIds)
+  const visibleDevin = getVisibleUsageProvider('devin', devin, usageSettings)
+  const gatedShow = (id: StatusBarItem, visible: ProviderRateLimits | null): boolean =>
+    visible !== null &&
+    statusBarItems.includes(id) &&
+    isStatusBarItemAvailable(id, detectedAgentIds)
+  const showClaude = gatedShow('claude', visibleClaude)
+  const showCodex = gatedShow('codex', visibleCodex)
+  const showGemini = gatedShow('gemini', visibleGemini)
+  const showKimi = gatedShow('kimi', visibleKimi)
+  const showAntigravity = gatedShow('antigravity', visibleAntigravity)
   // MiniMax supports cookie/API-key usage without an installed CLI.
   const showMiniMax = visibleMiniMax !== null && statusBarItems.includes('minimax')
-  const showGrok =
-    visibleGrok !== null &&
-    statusBarItems.includes('grok') &&
-    isStatusBarItemAvailable('grok', detectedAgentIds)
+  const showGrok = gatedShow('grok', visibleGrok)
   // Cursor IDE sessions can supply usage without cursor-agent on PATH.
   const showCursor = visibleCursor !== null && statusBarItems.includes('cursor')
   // A saved ZCode Coding Plan key establishes usage independently of CLI detection.
@@ -174,10 +173,8 @@ export function useStatusBarController(floatingTerminalOpen: boolean) {
     visibleZcode !== null &&
     statusBarItems.includes('zcode') &&
     (rateLimits.zcodePlanApiKeyConfigured || isStatusBarItemAvailable('zcode', detectedAgentIds))
-  const showMuse =
-    visibleMuse !== null &&
-    statusBarItems.includes('muse') &&
-    isStatusBarItemAvailable('muse', detectedAgentIds)
+  const showMuse = gatedShow('muse', visibleMuse)
+  const showDevin = gatedShow('devin', visibleDevin)
   // OpenCode Go usage can use web credentials independently of CLI detection.
   const visibleOpencodeGo = getVisibleUsageProvider('opencode-go', opencodeGo, usageSettings)
   const showOpencodeGo = visibleOpencodeGo !== null && statusBarItems.includes('opencode-go')
@@ -199,7 +196,8 @@ export function useStatusBarController(floatingTerminalOpen: boolean) {
     showGrok ||
     showCursor ||
     showZcode ||
-    showMuse
+    showMuse ||
+    showDevin
   const anyVisible = hasVisibleUsageMeters || showResourceUsage
   // Why: include Settings so durable managed accounts count — a configured user isn't shown the empty state while snapshots hydrate.
   const isEmptyUsageState = isUsageEmptyState(rateLimits, usageSettings)
@@ -216,7 +214,8 @@ export function useStatusBarController(floatingTerminalOpen: boolean) {
     grok?.status === 'fetching' ||
     cursor?.status === 'fetching' ||
     zcode?.status === 'fetching' ||
-    muse?.status === 'fetching'
+    muse?.status === 'fetching' ||
+    devin?.status === 'fetching'
 
   const floatingTerminalActionLabel = floatingTerminalOpen
     ? t('auto.components.status.bar.floatingWorkspace.minimize', 'Minimize Floating Workspace')
@@ -235,7 +234,8 @@ export function useStatusBarController(floatingTerminalOpen: boolean) {
     showGrok ? visibleGrok : null,
     showCursor ? visibleCursor : null,
     showZcode ? visibleZcode : null,
-    showMuse ? visibleMuse : null
+    showMuse ? visibleMuse : null,
+    showDevin ? visibleDevin : null
   ]
     .filter((p): p is ProviderRateLimits => p !== null)
     // Why: the bar collapses chips from the end, so placeholders give way first.

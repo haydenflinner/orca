@@ -161,6 +161,18 @@ export function StatusBarVisibilityMenu({
             {t('auto.components.status.bar.StatusBar.museUsageMenu', 'Muse Usage')}
           </DropdownMenuCheckboxItem>
         )}
+        {isStatusBarItemAvailable('devin', detectedAgentIds) && (
+          <DropdownMenuCheckboxItem
+            checked={statusBarItems.includes('devin')}
+            onCheckedChange={() => {
+              recordFeatureInteraction('usage-tracking')
+              toggleStatusBarItem('devin')
+            }}
+          >
+            <AgentIcon agent="devin" size={14} />
+            {t('auto.components.status.bar.StatusBar.devinUsageMenu', 'Devin Usage')}
+          </DropdownMenuCheckboxItem>
+        )}
         <DropdownMenuCheckboxItem
           checked={statusBarItems.includes('cursor')}
           onCheckedChange={() => {

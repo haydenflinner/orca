@@ -10,7 +10,8 @@ const CLI_GATED_ITEMS: ReadonlySet<StatusBarItem> = new Set([
   'antigravity',
   'grok',
   'zcode',
-  'muse'
+  'muse',
+  'devin'
 ])
 
 export function isStatusBarItemAvailable(

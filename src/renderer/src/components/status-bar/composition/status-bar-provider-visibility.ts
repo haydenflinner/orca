@@ -1,4 +1,7 @@
-import type { ProviderRateLimits } from '../../../../../shared/agent-usage/rate-limits/rate-limit-types'
+import type {
+  ProviderRateLimits,
+  RateLimitState
+} from '../../../../../shared/agent-usage/rate-limits/rate-limit-types'
 import type { GlobalSettings } from '../../../../../shared/settings/global-settings-types'
 import { hasUsageData } from '../../../../../shared/agent-usage/display/usage-provider-windows'
 
@@ -20,6 +23,36 @@ export type UsageProviderSettings = Pick<
   opencodeGoApiKeyConfigured: boolean
   grokAuthConfigured: boolean
   cursorAuthConfigured: boolean
+  devinAuthConfigured: boolean
+}
+
+/** Main reports credential presence on the rate-limit state; fold it into the settings view once. */
+export function resolveUsageProviderSettings(
+  settings: Partial<GlobalSettings> | null | undefined,
+  remoteOwned: boolean,
+  antigravityUsageConfigured: boolean,
+  rateLimits: Pick<
+    RateLimitState,
+    | 'minimaxCookieConfigured'
+    | 'minimaxApiKeyConfigured'
+    | 'opencodeGoApiKeyConfigured'
+    | 'grokAuthConfigured'
+    | 'cursorAuthConfigured'
+    | 'zcodePlanApiKeyConfigured'
+    | 'devinAuthConfigured'
+  >
+) {
+  return {
+    ...(remoteOwned ? {} : settings),
+    antigravityUsageConfigured,
+    minimaxCookieConfigured: rateLimits.minimaxCookieConfigured,
+    minimaxApiKeyConfigured: rateLimits.minimaxApiKeyConfigured,
+    opencodeGoApiKeyConfigured: rateLimits.opencodeGoApiKeyConfigured,
+    grokAuthConfigured: rateLimits.grokAuthConfigured,
+    cursorAuthConfigured: rateLimits.cursorAuthConfigured,
+    zcodePlanApiKeyConfigured: rateLimits.zcodePlanApiKeyConfigured === true,
+    devinAuthConfigured: rateLimits.devinAuthConfigured
+  }
 }
 
 type UsageProviderSnapshots = {
@@ -34,6 +67,7 @@ type UsageProviderSnapshots = {
   cursor: ProviderRateLimits | null | undefined
   zcode?: ProviderRateLimits | null
   muse?: ProviderRateLimits | null
+  devin?: ProviderRateLimits | null
 }
 
 type UsageProviderId = ProviderRateLimits['provider']
@@ -70,7 +104,8 @@ export function hasUsageProviderSettings(
     settings?.minimaxApiKeyConfigured === true ||
     settings?.grokAuthConfigured === true ||
     settings?.cursorAuthConfigured === true ||
-    settings?.zcodePlanApiKeyConfigured === true
+    settings?.zcodePlanApiKeyConfigured === true ||
+    settings?.devinAuthConfigured === true
   )
 }
 
@@ -111,6 +146,9 @@ export function hasUsageProviderSettingsForProvider(
   }
   if (providerId === 'zcode') {
     return settings.zcodePlanApiKeyConfigured === true
+  }
+  if (providerId === 'devin') {
+    return settings.devinAuthConfigured === true
   }
   return false
 }
@@ -168,7 +206,8 @@ export function isUsageEmptyState(
     isProviderSnapshotPending(providers.grok) ||
     isProviderSnapshotPending(providers.cursor) ||
     (providers.zcode !== undefined && isProviderSnapshotPending(providers.zcode)) ||
-    (providers.muse !== undefined && isProviderSnapshotPending(providers.muse))
+    (providers.muse !== undefined && isProviderSnapshotPending(providers.muse)) ||
+    (providers.devin !== undefined && isProviderSnapshotPending(providers.devin))
   ) {
     return false
   }
@@ -184,6 +223,7 @@ export function isUsageEmptyState(
     !isProviderConfigured(providers.grok) &&
     !isProviderConfigured(providers.cursor) &&
     !isProviderConfigured(providers.zcode) &&
-    !isProviderConfigured(providers.muse)
+    !isProviderConfigured(providers.muse) &&
+    !isProviderConfigured(providers.devin)
   )
 }
