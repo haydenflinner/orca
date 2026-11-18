@@ -61,6 +61,8 @@ export class JsonlRpcAgentConnection {
     const peerOptions = resolveJsonlRpcPeerOptions(options.peer)
     this.managed = spawnManagedProviderProcess(launch, {
       spawnImpl,
+      // JSON-RPC agents reject a second initialize; adoption needs a protocol-level reattach.
+      park: false,
       site: 'jsonl-rpc-agent-teardown'
     })
     const managed = this.managed

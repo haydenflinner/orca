@@ -1,6 +1,12 @@
 import type { ProviderChild } from './provider-child'
 import { spawnProviderProcess, type ProviderProcessSpawner } from './provider-process-spawn'
+import {
+  openSessionParkedProvider,
+  providerParkSessionKey,
+  providerParkSupported
+} from './park/provider-park'
 import { RetryableProcessExitProof } from '@orca/process-host/retryable-process-exit-proof'
+import { spawnProcess } from '@orca/process-host'
 import type { ProviderProcessLaunch } from './provider-process-launch'
 import { processEnvWithoutAgentSession } from '../../shared/agent-launch/startup/parent-agent-session-env'
 import {
@@ -46,6 +52,8 @@ type ManagedProviderProcessOptions = {
   acceptClose?: (result: ProviderProcessCloseResult) => boolean
   /** Defaults to `session`; a one-shot's stdin end completes its request instead of stopping it. */
   lifetime?: ProviderSupervisorLifetime
+  /** False keeps this child on the in-process supervisor; session children park by default on POSIX. */
+  park?: boolean
   onOutput?: () => void
   /** Each stderr line, `cut` past `stderrLineMaxChars`; true withholds it from the tail. */
   onStderrLine?: (line: string, cut: boolean) => boolean
@@ -111,7 +119,7 @@ export function spawnManagedProviderProcess(
       `Supervised provider graceful exit must wait at least ${PROVIDER_SUPERVISOR_MAX_STOP_MS} ms; received ${policy.gracefulExitMs} ms`
     )
   }
-  const child = spawnProviderProcess(spec, options.spawnImpl)
+  const child = spawnManagedChild(launch, spec, options)
   const listeners = new Set<(exit: ProviderProcessExit) => void>()
   let observed: ProviderProcessExit | null = null
   let spawnFailed = false
@@ -280,6 +288,29 @@ export function spawnManagedProviderProcess(
       return known ? Promise.resolve(known) : close(tree, closeOptions)
     }
   }
+}
+
+/** Session providers park under a detached supervisor; custom spawners and one-shots stay in-process. */
+function spawnManagedChild(
+  launch: ProviderProcessLaunch,
+  spec: ReturnType<typeof createProviderSpawnSpec>,
+  options: ManagedProviderProcessOptions
+): ProviderChild {
+  const localSpawn = options.spawnImpl === undefined || options.spawnImpl === spawnProcess
+  const sessionId =
+    options.park === false || !localSpawn || options.lifetime === 'one-shot'
+      ? null
+      : providerParkSessionKey(spec.env)
+  if (sessionId && providerParkSupported()) {
+    const parked = openSessionParkedProvider(
+      { command: launch.command, args: launch.args, cwd: spec.cwd, env: spec.env },
+      sessionId
+    )
+    if (parked) {
+      return parked.child
+    }
+  }
+  return spawnProviderProcess(spec, options.spawnImpl)
 }
 
 /** A premature data listener would drain stdout before a late reader can subscribe. */

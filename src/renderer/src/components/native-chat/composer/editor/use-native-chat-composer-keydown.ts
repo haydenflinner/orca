@@ -17,6 +17,9 @@ import {
   type NativeChatComposerRecall
 } from '../../drafts/native-chat-sent-prompt-history'
 
+/** Two plain Enters inside this window on an empty composer steer the head queued card. */
+const DOUBLE_ENTER_STEER_WINDOW_MS = 500
+
 export type UseNativeChatComposerKeyDownArgs = {
   autocomplete: ComposerAutocomplete
   mentionFiles: NativeChatMentionFiles
@@ -64,6 +67,7 @@ export function useNativeChatComposerKeyDown({
   // Read through a ref: the transcript changes on every streamed frame.
   const recallRef = useRef(recall)
   recallRef.current = recall
+  const lastPlainEnterAtRef = useRef(0)
   return useCallback(
     (event) => {
       if (isComposing() || event.nativeEvent.isComposing || event.keyCode === 229) {
@@ -139,6 +143,22 @@ export function useNativeChatComposerKeyDown({
       if (event.key === 'Enter' && !event.shiftKey) {
         event.preventDefault()
         if (!modified) {
+          // Enter queues the draft; a second Enter within the window steers the head card —
+          // the pattern terminal harnesses use for submit-then-send.
+          const pressedAt = Date.now()
+          const repeated = pressedAt - lastPlainEnterAtRef.current < DOUBLE_ENTER_STEER_WINDOW_MS
+          lastPlainEnterAtRef.current = pressedAt
+          if (
+            repeated &&
+            !event.repeat &&
+            draft.trim() === '' &&
+            !hasAttachments &&
+            steerHead?.()
+          ) {
+            // Spend the pair so a third press cannot steer the card that just became head.
+            lastPlainEnterAtRef.current = 0
+            return
+          }
           send()
         } else if (draft.trim() !== '' || hasAttachments) {
           // The other thing than the setting, for this one message.

@@ -108,6 +108,8 @@ export class AcpAgentConnection extends AcpSessionRuntime {
     }
     const managed = spawnManagedProviderProcess(launch, {
       spawnImpl,
+      // ACP session/load reattach is not wired yet; an adopted agent would reject initialize.
+      park: false,
       site: 'acp-agent-teardown',
       ...(options.onOutput ? { onOutput: options.onOutput } : {}),
       ...(signIn
