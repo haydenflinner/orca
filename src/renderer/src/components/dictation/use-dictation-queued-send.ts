@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useRef, useState, type RefObject } from 'react'
 import { isDictationUnderway, type DictationSession } from './dictation-session-machine'
 import { dispatchDictationControl } from './dictation-control-events'
-import { pressDictationTerminalEnter } from './dictation-insertion-target'
+import {
+  pressDictationTerminalEnter,
+  type DictationInsertionTarget
+} from './dictation-insertion-target'
 import type { DictationKeptRecording } from './dictation-kept-recording'
 
 export type DictationQueuedSendKind = 'chat' | 'terminal'
@@ -10,6 +13,12 @@ type QueuedSend = (stillQueued: () => boolean) => void | Promise<void>
 
 type ComposerSendQueue = (root: HTMLElement, send: () => void) => boolean
 let composerSendQueue: ComposerSendQueue | null = null
+let dictationTarget: (() => DictationInsertionTarget | null) | null = null
+
+/** The session's kept insertion target (cleared when the session goes idle); for loop-style voice senders. */
+export function currentDictationInsertionTarget(): DictationInsertionTarget | null {
+  return dictationTarget?.() ?? null
+}
 
 /**
  * A composer's Send: while it's being dictated into, it waits for the last words to land and render,
@@ -76,8 +85,10 @@ export function useDictationQueuedSend(
       const target = keptRef.current?.target
       return target?.kind === 'composer' && target.root === root && queue('chat', send)
     }
+    dictationTarget = () => keptRef.current?.target ?? null
     return () => {
       composerSendQueue = null
+      dictationTarget = null
     }
   }, [keptRef, queue])
 

@@ -20880,6 +20880,7 @@
         "startVoiceMode": "Voice chat: speak replies aloud",
         "stopVoiceMode": "Stop voice chat",
         "voiceModeSpeaking": "Speaking…",
+        "voiceModeListening": "Listening…",
         "noSkills": "No matching skills",
         "noCommandsOrSkills": "No matching commands or skills",
         "noCommands": "No matching commands",

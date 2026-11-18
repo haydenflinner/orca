@@ -10,11 +10,18 @@ export function NativeChatVoiceModeToggle({ control }: { control: NativeChatVoic
   const label = control.armed
     ? t('components.native-chat.composer.stopVoiceMode', 'Stop voice chat')
     : t('components.native-chat.composer.startVoiceMode', 'Voice chat: speak replies aloud')
+  const status = control.armed
+    ? control.speaking
+      ? t('components.native-chat.composer.voiceModeSpeaking', 'Speaking…')
+      : control.listening
+        ? t('components.native-chat.composer.voiceModeListening', 'Listening…')
+        : null
+    : null
   return (
     <span className="flex items-center gap-1">
-      {control.armed && control.speaking ? (
+      {status ? (
         <span data-composer-label className="text-xs text-muted-foreground">
-          {t('components.native-chat.composer.voiceModeSpeaking', 'Speaking…')}
+          {status}
         </span>
       ) : null}
       <Tooltip>

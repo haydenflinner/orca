@@ -7,6 +7,27 @@ import { useNativeChatTypedInsertion } from './use-native-chat-typed-insertion'
 import { useNativeChatPastedTextFile } from '../../paste/use-native-chat-pasted-text-file'
 import type { NativeChatComposerInput } from './native-chat-composer-input'
 
+/** Stable identity of where pane-routed inserts land, across PTY reconnect and session changes. */
+export function nativeChatComposerTargetKey(
+  paneKey: string,
+  targetPtyId: string | null,
+  structuredTransport:
+    | {
+        sessionId?: string | undefined
+        worktreeId?: string | undefined
+        runtimeEnvironmentId?: string | null | undefined
+      }
+    | undefined
+): string {
+  return [
+    paneKey,
+    targetPtyId,
+    structuredTransport?.sessionId,
+    structuredTransport?.worktreeId,
+    structuredTransport?.runtimeEnvironmentId
+  ].join('|')
+}
+
 type UseNativeChatComposerHandleArgs = Parameters<typeof useNativeChatTypedInsertion>[0] &
   Omit<UseNativeChatComposerPasteArgs, 'insertTypedText'> & {
     /** Intake only: captured with the paste action, never consulted during settlement. */

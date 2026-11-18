@@ -14,7 +14,10 @@ import { NativeChatComposerField } from './editor/NativeChatComposerField'
 import { useNativeChatComposerAttachments } from '../attachments/chips/use-native-chat-composer-attachments'
 import { nativeChatComposerSendState } from './submit/native-chat-composer-send-state'
 import { useNativeChatSteerChordPreview } from './controls/use-native-chat-steer-chord-preview'
-import { useNativeChatComposerHandle } from './editor/use-native-chat-composer-handle'
+import {
+  nativeChatComposerTargetKey,
+  useNativeChatComposerHandle
+} from './editor/use-native-chat-composer-handle'
 import { useNativeChatFileDrops } from '../attachments/intake/use-native-chat-file-drops'
 import { useNativeChatComposerKeyDown } from './editor/use-native-chat-composer-keydown'
 import { useNativeChatSendLifecycle } from '../session/terminal/send/use-native-chat-send-lifecycle'
@@ -182,13 +185,7 @@ export const NativeChatComposerPane = forwardRef<ComposerHandle, C.NativeChatCom
       setDraft,
       setCaret,
       setActiveSuggestion,
-      targetKey: JSON.stringify([
-        paneKey,
-        targetPtyId,
-        structuredTransport?.sessionId,
-        structuredTransport?.worktreeId,
-        structuredTransport?.runtimeEnvironmentId
-      ]),
+      targetKey: nativeChatComposerTargetKey(paneKey, targetPtyId, structuredTransport),
       agent,
       disabled,
       resolveAttachmentOwner: fileDrops.resolveAttachmentOwner,
@@ -209,7 +206,9 @@ export const NativeChatComposerPane = forwardRef<ComposerHandle, C.NativeChatCom
       enabled: !editSession && !launchPrompt,
       paneKey,
       messages: recallSource?.messages,
-      sessionWorking: isWorking
+      sessionWorking: isWorking,
+      root,
+      send: () => send()
     })
     // What option commands and PTY sends share to reach, and read, the agent's input line.
     const ptyCommandTarget = {

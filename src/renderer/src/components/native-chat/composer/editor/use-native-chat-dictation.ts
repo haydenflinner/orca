@@ -14,6 +14,10 @@ export type NativeChatDictationVoiceArgs = {
   paneKey: string
   messages: readonly NativeChatMessage[] | undefined
   sessionWorking: boolean
+  /** The composer's root element, for checking the dictation session targets this composer. */
+  root: RefObject<HTMLDivElement | null>
+  /** Send-as-Enter; may close over a binding declared after this call site. */
+  send: () => void
 }
 
 /** The dictation and voice-mode props `NativeChatComposerField` consumes, under their prop names. */
@@ -49,7 +53,10 @@ export function useNativeChatDictation(
     paneKey: voice?.paneKey ?? '',
     messages: voice?.messages,
     sessionWorking: voice?.sessionWorking === true,
-    disabled
+    disabled,
+    textareaRef,
+    root: voice?.root,
+    send: voice?.send
   })
   const focusForDictation = useCallback(() => textareaRef.current?.focus(), [textareaRef])
   const toggleDictation = useCallback(() => {
