@@ -74,7 +74,7 @@ describe('assertWorktreeCleanForRemoval', () => {
       assertWorktreeCleanForRemoval('/repo-feature', false, {
         ignoredUntrackedPaths: ['node_modules']
       })
-    ).resolves.toBeUndefined()
+    ).resolves.toEqual([])
 
     expect(gitExecFileAsyncMock).toHaveBeenCalledWith(
       ['status', '--porcelain', '-z', '--untracked-files=all', '--ignore-submodules=none'],
