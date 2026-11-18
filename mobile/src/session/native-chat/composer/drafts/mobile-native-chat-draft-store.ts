@@ -155,6 +155,10 @@ export function readMobileNativeChatDraftEditGeneration(draftKey: string): numbe
   return drafts.get(draftKey)?.editGeneration ?? 0
 }
 
+export function readMobileNativeChatDraftText(draftKey: string): string {
+  return drafts.get(draftKey)?.text ?? ''
+}
+
 export function clearMobileNativeChatDraftForSend(
   target: string | MobileNativeChatDraftDestination,
   editGeneration: number,

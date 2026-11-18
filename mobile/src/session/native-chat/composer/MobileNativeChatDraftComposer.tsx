@@ -24,7 +24,9 @@ export function MobileNativeChatDraftComposer({
     messages: voiceMessages ?? NO_MESSAGES,
     sessionWorking: voiceSessionWorking,
     micAvailable: props.onMicPress !== undefined,
-    disabled: props.disabled === true || props.offline === true
+    disabled: props.disabled === true || props.offline === true,
+    startDictation: props.onMicPress,
+    send: props.onSend
   })
   return (
     <MobileNativeChatComposer

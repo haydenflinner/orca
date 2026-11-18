@@ -17,6 +17,11 @@ import {
   stopMobileTts
 } from '../../../platform/speech/mobile-tts'
 import {
+  readMobileNativeChatDraftEditGeneration,
+  readMobileNativeChatDraftText
+} from '../composer/drafts/mobile-native-chat-draft-store'
+import {
+  mobileNativeChatVoiceArmed,
   setMobileNativeChatVoiceArmed,
   useMobileNativeChatVoiceArmed
 } from './mobile-native-chat-voice-armed'
@@ -41,16 +46,19 @@ function dictationUnderway(dictation: UseMobileDictationResult): boolean {
 }
 
 /**
- * Armed per composer scope: settled assistant prose goes to the on-device TTS queue.
- * Toggle-off, a new user turn, a dictation start (barge-in), backgrounding and leaving
- * the screen all stop the speech; only settled growth is spoken.
+ * Armed per composer scope: settled assistant prose goes to the on-device TTS queue, then
+ * the composer starts dictation for the reply — a hands-free loop. Speech that ends
+ * interrupted never restarts listening, so toggle-off, barge-in, a new user turn,
+ * backgrounding and leaving the screen all break the loop.
  */
 export function useMobileNativeChatVoice({
   scopeKey,
   messages,
   sessionWorking,
   micAvailable,
-  disabled = false
+  disabled = false,
+  startDictation,
+  send
 }: {
   scopeKey: string | null
   messages: readonly NativeChatMessage[]
@@ -58,6 +66,10 @@ export function useMobileNativeChatVoice({
   /** The composer mic exists: dictation can take this chat's reply. */
   micAvailable: boolean
   disabled?: boolean
+  /** The mic's own start path; the loop calls it after a reply played out whole. */
+  startDictation?: () => void
+  /** Sends this composer's draft once dictated words land in it. */
+  send?: (text: string) => void
 }): MobileNativeChatVoiceControl {
   const host = useMobileDictationHost()
   const dictation = useMobileDictationHostLive(host)
@@ -65,7 +77,9 @@ export function useMobileNativeChatVoice({
   const enabled = scopeKey !== null && micAvailable
   const armed = enabled && armedFlag
   const underway = dictationUnderway(dictation)
-  const listening = armed && underway
+  const ownerTarget = host.owner?.target
+  const listening =
+    armed && underway && ownerTarget?.field === 'chat' && ownerTarget.scope === scopeKey
   const available = enabled && mobileTtsAvailable() && !disabled
   const [speaking, setSpeaking] = useState(false)
   // Chars already handed to the speaker, per message id; a settled row speaks only its growth.
@@ -74,19 +88,37 @@ export function useMobileNativeChatVoice({
   const initializedRef = useRef(false)
   const lastUserIdRef = useRef<string | null>(null)
   const underwayRef = useRef(underway)
+  // Draft revision when this composer's dictation began: only a landing that changed the
+  // draft may be sent, so a discarded recording or an empty transcript cannot send stale text.
+  const sendGateRef = useRef<number | null>(null)
 
   const stopSpeak = useCallback(() => stopMobileTts(), [])
 
-  const speak = useCallback((text: string) => {
+  // An utterance that played out whole restarts listening; any interruption ends the loop's turn.
+  const autoListen = useEffectEvent((outcome: 'finished' | 'interrupted' | 'unavailable') => {
+    if (
+      outcome !== 'finished' ||
+      scopeKey === null ||
+      !mobileNativeChatVoiceArmed(scopeKey) ||
+      !initializedRef.current ||
+      host.getUnderway()
+    ) {
+      return
+    }
+    startDictation?.()
+  })
+
+  const speak = useEffectEvent((text: string) => {
     pendingRef.current += 1
     setSpeaking(true)
-    void speakMobileTts(text).then(() => {
+    void speakMobileTts(text).then((outcome) => {
       pendingRef.current = Math.max(0, pendingRef.current - 1)
       if (pendingRef.current === 0) {
         setSpeaking(false)
+        autoListen(outcome)
       }
     })
-  }, [])
+  })
 
   const review = useEffectEvent((list: readonly NativeChatMessage[], working: boolean) => {
     const userId = voiceLastUserMessageId(list)
@@ -141,14 +173,32 @@ export function useMobileNativeChatVoice({
     review(messages, sessionWorking)
   }, [armed, messages, sessionWorking, stopSpeak])
 
-  // A dictation that starts anywhere on the phone barges whatever reply is playing.
+  // Loop edges: a dictation start barges whatever reply is playing, and a dictation whose
+  // words landed in this composer ends its turn by sending them.
   useEffect(() => {
     const wasUnderway = underwayRef.current
     underwayRef.current = underway
-    if (armed && underway && !wasUnderway) {
-      stopSpeak()
+    if (underway && !wasUnderway) {
+      if (armed) {
+        stopSpeak()
+        sendGateRef.current =
+          scopeKey !== null && ownerTarget?.field === 'chat' && ownerTarget.scope === scopeKey
+            ? readMobileNativeChatDraftEditGeneration(scopeKey)
+            : null
+      }
+      return
     }
-  }, [armed, underway, stopSpeak])
+    if (!underway && wasUnderway) {
+      const gate = sendGateRef.current
+      sendGateRef.current = null
+      if (armed && gate !== null && scopeKey !== null) {
+        const text = readMobileNativeChatDraftText(scopeKey)
+        if (readMobileNativeChatDraftEditGeneration(scopeKey) !== gate && text.trim() !== '') {
+          send?.(text)
+        }
+      }
+    }
+  }, [armed, underway, scopeKey, ownerTarget, stopSpeak, send])
 
   // The phone going quiet (background/lock) must not leave a voice talking unseen.
   useEffect(() => {
