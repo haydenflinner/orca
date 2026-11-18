@@ -21,6 +21,7 @@ import {
   type StructuredAgentSessionLogger
 } from '../../../native-chat/agent-session-wire/host/structured-agent-session-logger'
 import { migrateLegacyNativeChatVisualsFolders } from '../../../native-chat/conversation-files/native-chat-scratch-folder-migration'
+import { sweepProviderParks } from '../../../provider-process/park/provider-park'
 
 import type { StructuredAgentSessionRuntimeDeps } from './structured-agent-session-runtime-contract'
 
@@ -159,6 +160,8 @@ async function install(deps: StructuredAgentSessionRuntimeDeps): Promise<Install
     throw new Error(STRUCTURED_AGENT_SESSION_LOGGER_REQUIRED)
   }
   const logger = neverThrowingStructuredAgentSessionLogger(deps.logger)
+  // Dead supervisors leave stale files; live parks keep their records for session adoption.
+  void sweepProviderParks().catch(() => {})
   // The store launch admission may already have opened; a failed install leaves it to that slot.
   const recordStore = await openAgentSessionRecordStoreOnce(
     withPRWatchRecovery({

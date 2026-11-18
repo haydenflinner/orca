@@ -11,6 +11,7 @@ import { wslHookRelayManager } from '../../agent-hooks/wsl-relay/wsl-hook-relay-
 import { removeManagedAgentHooksAsync } from '../../agent-hooks/installation/managed-agent-hook-controls'
 import { stopStructuredAgentSessionRuntime } from '../../runtime/agent-session/installation/structured-agent-session-runtime'
 import { setStructuredAgentSessionTeardownTrigger } from '../../runtime/agent-session/installation/structured-agent-session-runtime-teardown'
+import { armProviderParkDetach } from '../../provider-process/park/provider-park-detach-policy'
 import { awaitRuntimeFileWatcherUnsubscribes } from '../../runtime/files/watch/file-watcher-leases'
 import { clearRuntimeMetadataIfOwned } from '../../runtime/rpc/server/runtime-metadata'
 import { shutdownPairedRuntimeBrowserClientHosts } from '../../browser/client-hosts/lifecycle/paired-runtime-browser-client-host-runtime'
@@ -141,6 +142,10 @@ function installWillQuitHandler(): void {
     stopCodexAccountHistoryWork()
     // Stamp resume reasons before stopping sessions; an update restart was not a user quit.
     setStructuredAgentSessionTeardownTrigger(updateQuitInProgress ? 'update' : 'quit')
+    if (updateQuitInProgress) {
+      // Update teardown detaches parked providers instead of stopping them; the next runtime adopts them.
+      armProviderParkDetach()
+    }
     const structuredAgentSessionShutdown = stopStructuredAgentSessionRuntime()
     state.pluginService = null
     setUnreadDockBadgeCount(0)

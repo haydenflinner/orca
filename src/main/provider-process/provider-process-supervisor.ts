@@ -207,7 +207,7 @@ export type ProviderSupervisorOptions = {
 }
 
 // Keep user Node startup options on the provider, outside the Electron supervisor bootstrap.
-const PROVIDER_ONLY_NODE_ENV_KEYS = ['NODE_OPTIONS', 'NODE_REPL_EXTERNAL_MODULE'] as const
+export const PROVIDER_ONLY_NODE_ENV_KEYS = ['NODE_OPTIONS', 'NODE_REPL_EXTERNAL_MODULE'] as const
 
 // A longer grace than the max stop allows would let recovery or close SIGKILL mid-stop.
 function assertGraceWithin(name: string, graceMs: number, maxMs: number): void {

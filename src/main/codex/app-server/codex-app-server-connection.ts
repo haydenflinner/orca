@@ -36,6 +36,8 @@ async function connectCodexAppServer(
 ): Promise<CodexAppServerConnection> {
   const managed = spawnManagedProviderProcess(launch, {
     spawnImpl,
+    // A live adopted server would reject a second JSON-RPC initialize; resume spawns fresh.
+    park: false,
     site: 'codex-app-server-teardown'
   })
   const { child } = managed
