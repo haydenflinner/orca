@@ -41,7 +41,7 @@ export function DeleteWorktreeLocalFilesHint({
       'Ignored files could not be fully checked'
     )
     return (
-      <div className="mt-0.5 flex h-4 min-w-0 items-center gap-1.5 text-destructive">
+      <div className="mt-0.5 flex h-4 min-w-0 items-center gap-1.5 text-status-warning-text">
         <AlertTriangle className="size-3 shrink-0" />
         <span className="min-w-0 truncate font-medium">{uncheckedLabel}</span>
       </div>
@@ -68,8 +68,8 @@ export function DeleteWorktreeLocalFilesHint({
           aria-label={`${countLabel}: ${t('components.workspace.delete.ignoredFiles.showPaths', 'Show ignored paths')}`}
           className="group flex h-4 w-full min-w-0 cursor-pointer items-center gap-1.5 rounded-sm text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
         >
-          <AlertTriangle className="size-3 shrink-0 text-destructive" />
-          <span className="min-w-0 truncate font-medium text-destructive group-hover:underline">
+          <AlertTriangle className="size-3 shrink-0 text-status-warning-text" />
+          <span className="min-w-0 truncate font-medium text-status-warning-text group-hover:underline">
             {countLabel}
           </span>
           {inlinePreview ? (

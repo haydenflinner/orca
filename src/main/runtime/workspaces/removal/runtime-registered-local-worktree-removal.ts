@@ -145,6 +145,8 @@ async function acceptRuntimeRegisteredLocalWorktreeRemoval(args: {
     ? []
     : await findExistingWorktreeSymlinkPaths(canonicalPath, linkedPaths)
   const markerMissing = await nativeWindowsMarkerMissing(canonicalPath, localOptions)
+  // Native Windows deletes recursively without Git, so tolerated links need no pre-removal.
+  let toleratedUntrackedPaths: string[] = []
   try {
     if (usesNativeWindowsRemoval(canonicalPath, localOptions)) {
       await authorizeWindowsCheckout(
@@ -159,16 +161,11 @@ async function acceptRuntimeRegisteredLocalWorktreeRemoval(args: {
         true
       )
     } else if (!markerMissing) {
-      await (args.hasLocalOptions
-        ? assertWorktreeCleanForRemoval(canonicalPath, args.force, {
-            ...localOptions,
-            ...(ignoredLinkedPaths.length > 0 ? { ignoredUntrackedPaths: ignoredLinkedPaths } : {})
-          })
-        : ignoredLinkedPaths.length > 0
-          ? assertWorktreeCleanForRemoval(canonicalPath, args.force, {
-              ignoredUntrackedPaths: ignoredLinkedPaths
-            })
-          : assertWorktreeCleanForRemoval(canonicalPath, args.force))
+      toleratedUntrackedPaths =
+        (await assertWorktreeCleanForRemoval(canonicalPath, args.force, {
+          ...(args.hasLocalOptions ? localOptions : {}),
+          ignoredUntrackedPaths: ignoredLinkedPaths
+        })) ?? []
     }
   } catch (error) {
     if (!isOrphanCompatiblePreflightError(error)) {
@@ -183,8 +180,10 @@ async function acceptRuntimeRegisteredLocalWorktreeRemoval(args: {
     try {
       await args.stopPtys()
       await args.beforeCheckoutDelete?.(refreshed)
-      if (!markerMissing && linkedPaths.length > 0) {
-        await removeWorktreeLinkedPaths(canonicalPath, linkedPaths)
+      // Unlink every ?? symlink the dirty check tolerated: git worktree remove still refuses them.
+      const unlinkPaths = [...new Set([...linkedPaths, ...toleratedUntrackedPaths])]
+      if (!markerMissing && unlinkPaths.length > 0) {
+        await removeWorktreeLinkedPaths(canonicalPath, unlinkPaths)
       }
       accepted = true
     } finally {

@@ -8,20 +8,22 @@ import {
 import { gitExecFileAsync } from '../../command-runner/git-exec-file'
 import { gitStreamStdout } from '../../command-runner/git-stream-stdout'
 import { resolveGitDir } from '../../source-control/resolve-git-dir'
+import { findExistingWorktreeSymlinkPaths } from '../content-paths/worktree-symlink-detection'
 import type { WorktreeRemovalPreflightOptions } from '../worktree-operation-options'
 import {
   WORKTREE_REMOVAL_PREFLIGHT_TIMEOUT_MS,
   gitExecOptions
 } from '../worktree-operation-options'
 
+/** Resolves to the ?? entries tolerated as symlinks; git worktree remove still refuses them, so callers unlink them first. */
 export async function assertWorktreeCleanForRemoval(
   worktreePath: string,
   force = false,
   options: WorktreeRemovalPreflightOptions = {},
   adminDirectory?: string
-): Promise<void> {
+): Promise<string[]> {
   if (force) {
-    return
+    return []
   }
 
   const { ignoredUntrackedPaths = [], ...gitOptions } = options
@@ -48,31 +50,48 @@ export async function assertWorktreeCleanForRemoval(
       execution,
       await resolveGitDir(worktreePath, gitOptions)
     ).catch(() => false)
-  const useNullTerminatedStatus = ignoredUntrackedPaths.length > 0
   const { stdout } = await gitExecFileAsync(
     [
       'status',
       '--porcelain',
-      ...(useNullTerminatedStatus ? ['-z'] : []),
+      '-z',
       '--untracked-files=all',
       // User ignore-submodules config must not hide edits from the dirty check.
       '--ignore-submodules=none'
     ],
     execution
   )
+  const toleratedUntrackedPaths = normalizedToleratedUntrackedPaths(ignoredUntrackedPaths)
+  const statusEntries = stdout.split('\0').filter(Boolean)
+  const untrackedCandidates = statusEntries
+    .filter((entry) => entry.startsWith('?? '))
+    .map((entry) => entry.slice(3).replace(/\\/g, '/'))
+    .filter((path) => !toleratedUntrackedPaths.has(path))
+  // Dir-only ignore rules cannot match a symlink, so shared links like node_modules report ??;
+  // removal unlinks them without touching the target, which is not lost worktree content.
+  const untrackedSymlinkPaths =
+    untrackedCandidates.length === 0
+      ? []
+      : await findExistingWorktreeSymlinkPaths(worktreePath, untrackedCandidates, {
+          wslDistro: gitOptions.wslDistro
+        })
+  for (const linkPath of untrackedSymlinkPaths) {
+    toleratedUntrackedPaths.add(linkPath)
+  }
   // Use the same entries for the verdict and the error message.
-  const blockingEntries = useNullTerminatedStatus
-    ? getBlockingUntrackedStatusEntries(stdout, ignoredUntrackedPaths)
-    : null
-  if (blockingEntries ? blockingEntries.length === 0 : !stdout.trim()) {
+  const blockingEntries = statusEntries.filter(
+    (entry) =>
+      !(entry.startsWith('?? ') && toleratedUntrackedPaths.has(entry.slice(3).replace(/\\/g, '/')))
+  )
+  if (blockingEntries.length === 0) {
     // Git refuses these even when clean; refuse before teardown instead of after terminals stop.
     if (await hasSubmoduleCheckout()) {
       throw new Error(SUBMODULE_REMOVAL_REFUSAL)
     }
-    return
+    return untrackedSymlinkPaths
   }
 
-  const blockingStatus = blockingEntries ? blockingEntries.join('\n') : stdout
+  const blockingStatus = blockingEntries.join('\n')
   if (await hasSubmoduleCheckout()) {
     // Force Delete also destroys submodule-only commits; put that detail before stdout for the formatter.
     throw new Error(`${SUBMODULE_DIRTY_REMOVAL_DETAIL}\n${blockingStatus.trim()}`)
@@ -133,13 +152,9 @@ async function readGitlinkPaths(
   return gitlinks
 }
 
-/** Exclude only the untracked shared links tolerated by the caller. */
-function getBlockingUntrackedStatusEntries(
-  status: string,
-  ignoredUntrackedPaths: readonly string[]
-): string[] {
-  const ignored = new Set(
-    ignoredUntrackedPaths
+function normalizedToleratedUntrackedPaths(paths: readonly string[]): Set<string> {
+  return new Set(
+    paths
       .map((entry) =>
         entry
           .trim()
@@ -148,10 +163,4 @@ function getBlockingUntrackedStatusEntries(
       )
       .filter((entry) => entry && !entry.split('/').includes('..'))
   )
-  return status
-    .split('\0')
-    .filter(Boolean)
-    .filter(
-      (entry) => !(entry.startsWith('?? ') && ignored.has(entry.slice(3).replace(/\\/g, '/')))
-    )
 }

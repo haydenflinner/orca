@@ -199,7 +199,7 @@ function resetRuntimeTestMocks(): void {
   vi.mocked(addWorktree).mockReset()
   vi.mocked(addSparseWorktree).mockReset()
   vi.mocked(assertWorktreeCleanForRemoval).mockReset()
-  vi.mocked(assertWorktreeCleanForRemoval).mockResolvedValue(undefined)
+  vi.mocked(assertWorktreeCleanForRemoval).mockResolvedValue([])
   vi.mocked(removeWorktree).mockReset()
   findExistingWorktreeSymlinkPathsMock.mockReset().mockResolvedValue([])
   removeWorktreeLinkedPathsMock.mockReset()

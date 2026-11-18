@@ -10,6 +10,7 @@ import {
   isOrphanCompatiblePreflightError
 } from '../paths/worktree-logic'
 
+/** Resolves to the untracked ?? symlinks the dirty check tolerated; the caller unlinks them before git worktree remove. */
 export async function assertRegisteredLocalWorktreePreflight(
   repoPath: string,
   canonicalWorktreePath: string,
@@ -19,9 +20,10 @@ export async function assertRegisteredLocalWorktreePreflight(
   hasLocalOptions: boolean,
   ignoredLinkedPaths: readonly string[],
   markerMissing: boolean
-): Promise<void> {
+): Promise<string[]> {
   try {
     if (usesNativeWindowsRemoval(canonicalWorktreePath, localOptions)) {
+      // Native Windows deletes recursively without Git, so tolerated links need no pre-removal.
       await authorizeWindowsCheckout(
         repoPath,
         canonicalWorktreePath,
@@ -34,16 +36,12 @@ export async function assertRegisteredLocalWorktreePreflight(
         true
       )
     } else if (!markerMissing) {
-      await (hasLocalOptions
-        ? assertWorktreeCleanForRemoval(canonicalWorktreePath, force, {
-            ...localOptions,
-            ...(ignoredLinkedPaths.length > 0 ? { ignoredUntrackedPaths: ignoredLinkedPaths } : {})
-          })
-        : ignoredLinkedPaths.length > 0
-          ? assertWorktreeCleanForRemoval(canonicalWorktreePath, force, {
-              ignoredUntrackedPaths: ignoredLinkedPaths
-            })
-          : assertWorktreeCleanForRemoval(canonicalWorktreePath, force))
+      return (
+        (await assertWorktreeCleanForRemoval(canonicalWorktreePath, force, {
+          ...(hasLocalOptions ? localOptions : {}),
+          ignoredUntrackedPaths: ignoredLinkedPaths
+        })) ?? []
+      )
     }
   } catch (error) {
     if (!isOrphanCompatiblePreflightError(error)) {
@@ -51,4 +49,5 @@ export async function assertRegisteredLocalWorktreePreflight(
     }
     // Git may discover orphaning after preflight; recursive fallback still requires strict PTY teardown.
   }
+  return []
 }
