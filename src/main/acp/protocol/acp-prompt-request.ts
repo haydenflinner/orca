@@ -13,24 +13,27 @@ function sessionBusy(error: unknown): boolean {
   )
 }
 
-/** Retain one logical prompt; only an explicit busy refusal permits another wire attempt. */
+/** Retain one logical prompt unless `concurrent` admits several; only an explicit busy refusal permits another wire attempt. */
 export class AcpPromptRequest {
-  private active?: AbortController
+  private readonly active = new Set<AbortController>()
   private closedWith?: Error
   private waiting = false
 
-  constructor(private readonly retryBusy: boolean) {}
+  constructor(
+    private readonly retryBusy: boolean,
+    private readonly concurrent = false
+  ) {}
 
   get waitingToRetry(): boolean {
     return this.waiting
   }
 
   async run(request: () => Promise<PromptResponse>): Promise<PromptResponse> {
-    if (this.active) {
+    if (!this.concurrent && this.active.size > 0) {
       throw new Error('ACP prompt already in progress')
     }
     const active = new AbortController()
-    this.active = active
+    this.active.add(active)
     try {
       let delayMs = 1_000
       for (;;) {
@@ -54,12 +57,14 @@ export class AcpPromptRequest {
       }
     } finally {
       this.waiting = false
-      this.active = undefined
+      this.active.delete(active)
     }
   }
 
   cancel(): void {
-    this.active?.abort()
+    for (const active of this.active) {
+      active.abort()
+    }
   }
 
   close(error: Error): void {

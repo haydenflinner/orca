@@ -31,6 +31,8 @@ export type AcpTimelineTranslatorOptions = {
   onTextDropped?: (drop: AcpTextDrop) => void
 }
 
+type OpenedPrompt = { promptId: string; events: ProviderTimelineEvent[] }
+
 /** Consume frames once; callers retry returned events. State lasts only for this provider child. */
 export class AcpTimelineTranslator {
   readonly providerSessionId: string
@@ -72,11 +74,7 @@ export class AcpTimelineTranslator {
   publication = (): (() => void) | undefined => this.ownership.publication()
 
   /** Use the host's command turn for compaction; inject prompt identity only when supported. */
-  openPrompt(
-    clientMessageId: string,
-    at: number,
-    compactionTurn?: string
-  ): { promptId: string; events: ProviderTimelineEvent[] } {
+  openPrompt(clientMessageId: string, at: number, compactionTurn?: string): OpenedPrompt {
     if (this.loading) {
       throw new Error('ACP prompt overlaps a prompt or load')
     }
@@ -85,6 +83,14 @@ export class AcpTimelineTranslator {
       this.ownership.operation().open(prompt.promptId)
     }
     return prompt
+  }
+
+  /** A mid-turn steer shares the open turn; its acceptance renders once that turn opens. */
+  joinPrompt(clientMessageId: string, at: number): OpenedPrompt {
+    if (this.loading) {
+      throw new Error('ACP steer overlaps a load')
+    }
+    return this.prompts.join(clientMessageId, at)
   }
 
   /** Side prompts share the session's ownership; their frames attribute while they run alone. */
@@ -100,13 +106,12 @@ export class AcpTimelineTranslator {
     result: PromptResponse,
     at: number
   ): ProviderTimelineEvent[] {
-    const hookBlock = this.dialect.hookBlock?.(result._meta)
     const providerTurnId = this.dialect.promptTurnId?.(result._meta)
     return this.finishPrompt(clientMessageId, {
       stopReason: result.stopReason,
       at,
-      ...(providerTurnId === undefined ? {} : { providerTurnId }),
-      hookBlock
+      hookBlock: this.dialect.hookBlock?.(result._meta),
+      ...(providerTurnId === undefined ? {} : { providerTurnId })
     })
   }
 
@@ -135,8 +140,8 @@ export class AcpTimelineTranslator {
     if (prompt === this.prompts.side && !prompt.opened) {
       // Late frames must not reopen the never-opened side turn.
       this.started.set(prompt.turn, true)
-      const joinTurn = this.prompts.current?.opened ? this.prompts.current.turn : this.activeTurn
-      return this.prompts.finishUnopenedSide(prompt, ending, joinTurn)
+      const join = this.prompts.current?.opened ? this.prompts.current.turn : this.activeTurn
+      return this.prompts.finishUnopenedSide(prompt, ending, join)
     }
     return [
       ...this.start(prompt.turn, ending.at),
@@ -249,10 +254,10 @@ export class AcpTimelineTranslator {
     if (extension?.disposition === 'map' && extension.failure && standard) {
       return events
     }
-    const end = extension?.end
-    if (end && turn) {
+    if (extension?.end && turn) {
       // Hook refusal ends immediately; normal completion waits for the prompt reply.
       const livePrompt = this.prompts.byTurn(turn)
+      const end = extension.end
       if (livePrompt && ['end_turn', 'cancelled'].includes(end.stopReason) && !end.hookBlock) {
         livePrompt.durationMs = end.durationMs
       } else {
@@ -315,16 +320,13 @@ export class AcpTimelineTranslator {
       this.end(this.activeTurn)
     }
     operation.open(turn)
-    if (this.prompts.tracks(turn)) {
-      const events = this.prompts.start(turn, at)
-      // Late frames must not reopen or retarget this prompt.
-      this.started.set(turn, true)
-      this.activeTurn = turn
-      return events
-    }
+    // Late frames must not reopen or retarget this prompt.
+    const events = this.prompts.tracks(turn)
+      ? this.prompts.start(turn, at)
+      : [{ type: 'turn.open' as const, turn, at }]
     this.started.set(turn, true)
     this.activeTurn = turn
-    return [{ type: 'turn.open', turn, at }]
+    return events
   }
 
   private end(turn: string): void {

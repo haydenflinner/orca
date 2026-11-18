@@ -12,6 +12,8 @@ export type AcpSend = {
   prompt: ContentBlock[]
   requestedAt: number
   side?: boolean
+  /** Host-owned prompts (compaction) reject mid-turn joins: steers queue and cancel. */
+  exclusive?: boolean
 }
 
 export type AcpDispatchSettlement = { clientMessageId: string } & (
@@ -27,6 +29,8 @@ export type AcpStructuredTurnsDeps = {
   agentName: string
   /** The agent takes concurrent prompts on a named side chain ("cognition.ai/chains"). */
   chains?: boolean
+  /** The agent steers the running turn with a concurrent prompt ("cognition.ai/midTurnPrompts"). */
+  midTurnPrompts?: boolean
   /** The agent's own command for /compact. */
   compactCommand?: string
   now: () => number

@@ -283,6 +283,7 @@ export async function initializeAcpStructuredSession(
       lane: liveLane,
       agentName,
       chains: acpInitializeChainsSupport(initialized).chains,
+      midTurnPrompts: acpInitializeChainsSupport(initialized).midTurnPrompts,
       compactCommand: spec.dialect.compactCommand,
       now,
       settle: onSettled,

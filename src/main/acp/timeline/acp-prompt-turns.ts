@@ -16,6 +16,8 @@ export type AcpPromptTurn = {
   turn: string
   requestedAt: number
   opened: boolean
+  /** A mid-turn steer sharing the main prompt's turn rather than opening its own. */
+  joined?: boolean
   durationMs?: number
   compaction?: AcpCompaction
 }
@@ -28,6 +30,8 @@ export class AcpPromptTurns {
   side?: AcpPromptTurn
   /** Retain the ended prompt so its reply can supply a late failure reason. */
   last?: AcpPromptTurn
+  /** Mid-turn steers share `current`'s turn; they resolve when it ends. */
+  private joinedPrompts: AcpPromptTurn[] = []
 
   constructor(
     private readonly sessionId: string,
@@ -53,9 +57,8 @@ export class AcpPromptTurns {
   byMessage(clientMessageId: string): AcpPromptTurn | undefined {
     return this.current?.clientMessageId === clientMessageId
       ? this.current
-      : this.side?.clientMessageId === clientMessageId
-        ? this.side
-        : undefined
+      : ((this.side?.clientMessageId === clientMessageId ? this.side : undefined) ??
+          this.joinedPrompts.find((prompt) => prompt.clientMessageId === clientMessageId))
   }
 
   /** Devin puts no chain id on session/update frames, so a lone side prompt owns them;
@@ -75,6 +78,7 @@ export class AcpPromptTurns {
     if (this.side?.turn === turn) {
       this.finishSide()
     }
+    this.joinedPrompts = this.joinedPrompts.filter((prompt) => prompt.turn !== turn)
   }
 
   /** An unopened side turn folds its acceptance into an open turn; with none, it still opens
@@ -123,11 +127,17 @@ export class AcpPromptTurns {
     failures: AcpTurnFailures
   ): AcpTurnEnding | ProviderTimelineEvent[] {
     const ending = acpPromptFailureEnding(this.dialect, error, at)
-    if (this.byMessage(clientMessageId) === undefined) {
+    const prompt = this.byMessage(clientMessageId)
+    if (prompt === undefined) {
       // A late answer may supply a failure reason missing from the provider's end.
       return this.last?.clientMessageId === clientMessageId && failures.has(this.last.turn)
         ? failures.row(this.last.turn, ending)
         : []
+    }
+    if (prompt.joined === true) {
+      // A steered message fails alone; the turn it joined may still be running.
+      this.joinedPrompts = this.joinedPrompts.filter((p) => p !== prompt)
+      return failures.row(prompt.turn, ending)
     }
     return ending
   }
@@ -155,6 +165,23 @@ export class AcpPromptTurns {
     this.current = { clientMessageId, turn, requestedAt: at, opened: false }
     const injected = this.dialect.injectedPromptIdentity === true
     return { promptId: turn, events: injected ? [] : this.start(turn, at) }
+  }
+
+  /** A mid-turn steer shares the running turn; its acceptance renders once that turn opens. */
+  join(clientMessageId: string, at: number): { promptId: string; events: ProviderTimelineEvent[] } {
+    const current = this.current
+    if (current === undefined) {
+      throw new Error('ACP steer has no turn to join')
+    }
+    const prompt: AcpPromptTurn = {
+      clientMessageId,
+      turn: current.turn,
+      requestedAt: at,
+      opened: current.opened,
+      joined: true
+    }
+    this.joinedPrompts.push(prompt)
+    return { promptId: current.turn, events: prompt.opened ? [this.accepted(prompt)] : [] }
   }
 
   /** The side chain serializes its own lane; its turn opens lazily on the first attributed frame. */
@@ -223,7 +250,23 @@ export class AcpPromptTurns {
       this.side = undefined
       return true
     }
+    const joined = this.joinedPrompts.find(
+      (prompt) => prompt.clientMessageId === clientMessageId && !prompt.opened
+    )
+    if (joined !== undefined) {
+      this.joinedPrompts.splice(this.joinedPrompts.indexOf(joined), 1)
+      return true
+    }
     return false
+  }
+
+  private accepted(prompt: AcpPromptTurn): ProviderTimelineEvent {
+    return {
+      type: 'input.accepted',
+      clientMessageId: prompt.clientMessageId,
+      requestedAt: prompt.requestedAt,
+      join: { thread: this.sessionId, turn: prompt.turn }
+    }
   }
 
   start(turn: string, at: number): ProviderTimelineEvent[] {
@@ -233,15 +276,14 @@ export class AcpPromptTurns {
       return []
     }
     prompt.opened = true
-    return [
-      { type: 'turn.open', turn, at },
-      {
-        type: 'input.accepted',
-        clientMessageId: prompt.clientMessageId,
-        requestedAt: prompt.requestedAt,
-        join: { thread: this.sessionId, turn }
+    const events: ProviderTimelineEvent[] = [{ type: 'turn.open', turn, at }, this.accepted(prompt)]
+    for (const joined of this.joinedPrompts) {
+      if (joined.turn === turn && !joined.opened) {
+        joined.opened = true
+        events.push(this.accepted(joined))
       }
-    ]
+    }
+    return events
   }
 }
 

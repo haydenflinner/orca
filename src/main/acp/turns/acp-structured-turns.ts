@@ -11,6 +11,8 @@ import type {
   StructuredAgentSessionCommandRun
 } from '../../native-chat/agent-session-wire/providers/structured-agent-session-adapter'
 import { acpCompactPrompt } from './acp-compaction-turn'
+import { AcpJoinedSends } from './acp-structured-joined-sends'
+import { AcpTurnIdlers } from './acp-turn-idlers'
 import { AcpSideSends } from './acp-structured-side-sends'
 import {
   acpAgentTurnFailed,
@@ -27,10 +29,12 @@ export class AcpStructuredTurns {
   // One cancel per prompt; failed writes allow a later steer to retry.
   private steerCancelled: Send | null = null
   private readonly steers: Send[] = []
+  /** Concurrent mid-turn steers sharing the active send's turn. */
+  private readonly joined: AcpJoinedSends
   private readonly side: AcpSideSends
   private readonly answers: AcpTurnAnswerHost
   private readonly unsettled = new Set<string>()
-  private readonly idleWaiters = new Set<() => void>()
+  private readonly idlers = new AcpTurnIdlers()
   private ended = false
   private stopAt: number | null = null
   // Steers still preparing their controls; they hold their place like queued steers.
@@ -58,15 +62,22 @@ export class AcpStructuredTurns {
       errored: (send, error) => acpTurnErrored(this.answers, send, error),
       idle: () => {
         if (this.active === null) {
-          this.notifyIdle()
+          this.idlers.notify()
         }
       }
+    })
+    this.joined = new AcpJoinedSends(deps, {
+      answered: (send, result) => acpTurnAnswered(this.answers, send, result),
+      errored: (send, error) => acpTurnErrored(this.answers, send, error)
     })
   }
 
   capturePendingSend(clientMessageId: string): () => boolean {
-    const send = this.active?.clientMessageId === clientMessageId ? this.active : null
-    return () => send !== null && this.active === send && !this.ended
+    const send =
+      this.active?.clientMessageId === clientMessageId
+        ? this.active
+        : (this.joined.find(clientMessageId) ?? null)
+    return () => send !== null && this.inFlight(send) && !this.ended
   }
 
   get running(): boolean {
@@ -130,25 +141,17 @@ export class AcpStructuredTurns {
   }
 
   whenIdle(signal?: AbortSignal): Promise<void> {
-    if ((!this.active && !this.side.running) || signal?.aborted) {
-      return Promise.resolve()
-    }
-    return new Promise((resolve) => {
-      const wake = (): void => {
-        this.idleWaiters.delete(wake)
-        signal?.removeEventListener('abort', wake)
-        resolve()
-      }
-      this.idleWaiters.add(wake)
-      signal?.addEventListener('abort', wake, { once: true })
-    })
+    return this.idlers.whenIdle(() => !this.active && !this.side.running, signal)
   }
 
   /** A steer whose controls must run as a prompt first holds its place until released: Stop
    *  reaches it, and answers ahead of it are cancelled as they start, as for any newer steer. */
   holdSteer(): () => void {
     this.preparingSteers += 1
-    this.cancelForSteer()
+    // A mid-turn-capable agent takes the prepared steer without a cancel.
+    if (this.deps.midTurnPrompts !== true) {
+      this.cancelForSteer()
+    }
     return () => void this.preparingSteers--
   }
 
@@ -165,6 +168,16 @@ export class AcpStructuredTurns {
       return
     }
     if (this.active) {
+      // Mid-turn-capable agents take a concurrent steer instead of a cancel; a prompt
+      // already dying to an earlier cancel or owning its lane keeps the serial path.
+      if (
+        this.deps.midTurnPrompts === true &&
+        this.steerCancelled !== this.active &&
+        this.active.exclusive !== true &&
+        this.joined.join(send)
+      ) {
+        return
+      }
       this.steers.push(send)
       this.cancelForSteer()
       return
@@ -181,7 +194,8 @@ export class AcpStructuredTurns {
     const send: Send = {
       clientMessageId: command.clientMessageId,
       prompt: acpCompactPrompt(command.instructions, this.deps.compactCommand),
-      requestedAt: this.deps.now()
+      requestedAt: this.deps.now(),
+      exclusive: true
     }
     lane.beginCommand(command)
     this.stopAt = null
@@ -227,7 +241,7 @@ export class AcpStructuredTurns {
     for (const send of [...this.steers.splice(0), ...this.side.withdraw()]) {
       this.reject(send.clientMessageId, agentSessionFailureFact('providerExited'))
     }
-    for (const inFlight of [this.active, this.side.takeInFlight()]) {
+    for (const inFlight of [this.active, this.side.takeInFlight(), ...this.joined.takeAll()]) {
       if (!inFlight) {
         continue
       }
@@ -239,7 +253,7 @@ export class AcpStructuredTurns {
     }
     this.active = null
     this.steerCancelled = null
-    this.notifyIdle()
+    this.idlers.notify()
   }
 
   private start(send: Send): void {
@@ -253,7 +267,9 @@ export class AcpStructuredTurns {
   }
 
   private inFlight(send: Send): boolean {
-    return send.side === true ? this.side.inFlight(send) : this.active === send
+    return send.side === true
+      ? this.side.inFlight(send)
+      : this.active === send || this.joined.inFlight(send)
   }
 
   private run(send: Send, promptId: string): void {
@@ -263,7 +279,12 @@ export class AcpStructuredTurns {
       ? { promptId, requestId: promptId }
       : undefined
     const answered = this.deps.connection.prompt(send.prompt, meta)
-    if (this.steers.length > 0 || this.preparingSteers > 0) {
+    if (this.deps.midTurnPrompts === true && send.exclusive !== true) {
+      // Queued and preparing steers join this fresh turn instead of restarting it.
+      for (const steer of this.steers.splice(0)) {
+        this.joined.join(steer)
+      }
+    } else if (this.steers.length > 0 || this.preparingSteers > 0) {
       this.cancelForSteer()
     }
     answered.then(
@@ -277,6 +298,12 @@ export class AcpStructuredTurns {
       this.side.finish(send)
       return
     }
+    if (this.joined.finish(send)) {
+      if (!this.active && !this.side.running) {
+        this.idlers.notify()
+      }
+      return
+    }
     if (this.active === send) {
       this.active = null
       this.stopAt = null
@@ -288,7 +315,7 @@ export class AcpStructuredTurns {
     if (next) {
       this.start(next)
     } else if (!this.active && !this.side.running) {
-      this.notifyIdle()
+      this.idlers.notify()
     }
   }
 
@@ -311,21 +338,13 @@ export class AcpStructuredTurns {
     })
   }
 
-  private notifyIdle(): void {
-    for (const wake of this.idleWaiters) {
-      wake()
-    }
-    this.idleWaiters.clear()
-  }
-
   private reject(clientMessageId: string, fact: SubmissionRejectionFact): void {
-    if (!this.unsettled.delete(clientMessageId)) {
-      return
+    if (this.unsettled.delete(clientMessageId)) {
+      const words = agentSessionFailureWords(fact, {
+        surface: 'rejection',
+        agentName: this.deps.agentName
+      })
+      this.deps.settle({ clientMessageId, state: 'rejected', ...words })
     }
-    this.deps.settle({
-      clientMessageId,
-      state: 'rejected',
-      ...agentSessionFailureWords(fact, { surface: 'rejection', agentName: this.deps.agentName })
-    })
   }
 }

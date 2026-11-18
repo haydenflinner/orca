@@ -51,6 +51,8 @@ export class AcpSessionRuntime {
   private readonly prompts: AcpPromptRequest
   /** Side-chain prompts run concurrently with the main prompt's single-flight tracking. */
   private readonly chainPrompts = new AcpPromptRequest(false)
+  /** Mid-turn steers share the running turn; several may be in flight together. */
+  private readonly steerPrompts: AcpPromptRequest
   private readonly inbound: AcpSessionInbound
 
   constructor(
@@ -59,6 +61,7 @@ export class AcpSessionRuntime {
     private readonly options: AcpSessionRuntimeOptions = {}
   ) {
     this.prompts = new AcpPromptRequest(options.retryBusyPrompts === true)
+    this.steerPrompts = new AcpPromptRequest(options.retryBusyPrompts === true, true)
     this.inbound = new AcpSessionInbound(options, () => this.started, this.listeners)
     this.peer = new AcpJsonRpcPeer(
       input,
@@ -70,6 +73,7 @@ export class AcpSessionRuntime {
         onClose: (error) => {
           this.prompts.close(error)
           this.chainPrompts.close(error)
+          this.steerPrompts.close(error)
           options.onClose?.(error)
         },
         ...(options.onOutputEnd ? { onOutputEnd: options.onOutputEnd } : {}),
@@ -178,10 +182,11 @@ export class AcpSessionRuntime {
   async prompt(
     prompt: PromptRequest['prompt'],
     meta?: Meta,
-    lane?: 'side'
+    lane?: 'side' | 'steer'
   ): Promise<PromptResponse> {
     const params: PromptRequest = { sessionId: this.sessionId(), prompt, ...withMeta(meta) }
-    const runner = lane === 'side' ? this.chainPrompts : this.prompts
+    const runner =
+      lane === 'side' ? this.chainPrompts : lane === 'steer' ? this.steerPrompts : this.prompts
     return runner.run(() => this.call('session/prompt', params, PromptResponseSchema))
   }
 
@@ -193,6 +198,7 @@ export class AcpSessionRuntime {
     // session/cancel is session-wide: no per-chain cancellation is advertised.
     this.prompts.cancel()
     this.chainPrompts.cancel()
+    this.steerPrompts.cancel()
     const params: CancelNotification = {
       sessionId: this.started.sessionId,
       ...withMeta(options.meta)
