@@ -133,6 +133,7 @@ function readEmittedVersion(root: string): number {
 }
 
 describe('External process-host development rebuilds', () => {
+  // Each rebuild runs the real tsc pipeline; a loaded machine needs more than the 30s default.
   it('rebuilds when an explicitly imported excluded source is created or edited', async () => {
     const { root, packageDir, main } = fixture()
     const versions: number[] = []
@@ -167,6 +168,7 @@ describe('External process-host development rebuilds', () => {
     await expect.poll(() => versions.at(-1), { timeout: 60_000 }).toBe(7)
   }, 180_000)
 
+  // Each rebuild runs the real tsc pipeline; a loaded machine needs more than the 30s default.
   it('recovers when a missing import is created in a new source directory', async () => {
     const { root, packageDir, main } = fixture()
     const loadedVersions: number[] = []
