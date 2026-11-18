@@ -30,6 +30,7 @@ import { imeComposedSegment } from '@/lib/text-input/ime/ime-composed-segment'
 import { acceptNativeChatPromptSuggestion } from './native-chat-prompt-suggestion-accept'
 import type { NativeChatFollowUpBehavior } from '../../../../../../shared/native-chat/input/composer/native-chat-follow-up-behavior'
 import type { NativeChatSteerChordPreview } from '../../../../../../shared/native-chat/input/composer/use-native-chat-steer-chord-preview'
+import type { NativeChatVoiceModeControl } from '../../voice/use-native-chat-voice-mode'
 
 function noop(): void {}
 
@@ -86,6 +87,8 @@ export type NativeChatComposerFieldProps = {
   onDictationToggle: () => void
   onDictationHoldStart: () => void
   onDictationHoldEnd: () => void
+  /** Hands-free voice chat toggle; absent in edit/launch composes. */
+  voiceMode?: NativeChatVoiceModeControl
   onSend: () => void
   /** Held Cmd/Ctrl: Send shows, and a click runs, what Cmd/Ctrl+Enter would do. */
   steerPreview?: NativeChatSteerChordPreview | null
@@ -145,6 +148,7 @@ export function NativeChatComposerField({
   onDictationToggle,
   onDictationHoldStart,
   onDictationHoldEnd,
+  voiceMode,
   onSend,
   steerPreview = null,
   onSteerPreview,
@@ -406,6 +410,7 @@ export function NativeChatComposerField({
                 onDictationToggle={dictationToggle}
                 onDictationHoldStart={dictationHoldStart}
                 onDictationHoldEnd={dictationHoldEnd}
+                voiceMode={voiceMode}
                 onSend={send}
                 steerPreview={steerPreview}
                 onSteerPreview={runSteerPreview}

@@ -23,6 +23,8 @@ import { NativeChatContextUsageRing } from '../../usage/NativeChatContextUsageRi
 import type { NativeChatContextUsageSummary } from '../../../../../../shared/native-chat/native-chat-context-usage-summary'
 import type { NativeChatOptionPickerRequest } from '../../session/options/controls/native-chat-option-picker-request'
 import type { NativeChatSteerChordPreview } from '../../../../../../shared/native-chat/input/composer/use-native-chat-steer-chord-preview'
+import { NativeChatVoiceModeToggle } from '../../voice/NativeChatVoiceModeToggle'
+import type { NativeChatVoiceModeControl } from '../../voice/use-native-chat-voice-mode'
 
 export type NativeChatComposerActionsProps = {
   editSession?: { cancel: () => void }
@@ -46,6 +48,8 @@ export type NativeChatComposerActionsProps = {
   onDictationToggle: () => void
   onDictationHoldStart: () => void
   onDictationHoldEnd: () => void
+  /** Absent where hands-free voice chat does not apply (edit session, launch prompt). */
+  voiceMode?: NativeChatVoiceModeControl
   onSend: () => void
   /** Cmd/Ctrl is held: Send names, and a click runs, what Cmd/Ctrl+Enter would do. */
   steerPreview?: NativeChatSteerChordPreview | null
@@ -83,6 +87,7 @@ export const NativeChatComposerActions = memo(function NativeChatComposerActions
   onDictationToggle,
   onDictationHoldStart,
   onDictationHoldEnd,
+  voiceMode,
   onSend,
   steerPreview = null,
   onSteerPreview,
@@ -239,6 +244,7 @@ export const NativeChatComposerActions = memo(function NativeChatComposerActions
       </TooltipContent>
     </Tooltip>
   )
+  const voiceModeControl = voiceMode ? <NativeChatVoiceModeToggle control={voiceMode} /> : null
   if (launchPrompt) {
     return (
       <div className="flex w-full items-center justify-between text-muted-foreground">
@@ -313,6 +319,7 @@ export const NativeChatComposerActions = memo(function NativeChatComposerActions
           }
         ]
       : []),
+    ...(voiceModeControl ? [{ id: 'voice', priority: 2, content: voiceModeControl }] : []),
     { id: 'dictation', priority: 2, content: dictation },
     ...(draftNotSaved
       ? [{ id: 'draft', priority: 1, content: <NativeChatComposerDraftNotSavedIcon shown /> }]

@@ -146,6 +146,17 @@ export type VoiceSettings = {
   aiCleanupInstructions?: string
   /** Said to take back what came just before it; only AI cleanup acts on it. Absent = "scratch that". */
   dictationCorrectionWord?: string
+  /** Words per minute for the local `say` voice-mode replies; absent = DEFAULT_TTS_WORDS_PER_MINUTE. */
+  ttsRate?: number
+}
+
+export const DEFAULT_TTS_WORDS_PER_MINUTE = 200
+
+/** 'interrupted' covers a user stop and a `say` failure; 'unavailable' means this platform cannot speak. */
+export type SpeechSpeakOutcome = 'finished' | 'interrupted' | 'unavailable'
+
+export type SpeechSpeakResult = {
+  outcome: SpeechSpeakOutcome
 }
 
 /** Where a dictation goes: an engine in the desktop's own process takes repoTerms, a host resolves worktreeId itself. */

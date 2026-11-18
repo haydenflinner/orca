@@ -67,8 +67,10 @@ export const NativeChatComposerPane = forwardRef<ComposerHandle, C.NativeChatCom
   ): React.JSX.Element {
     // Own drafts and attachments by pane/conversation so reconnect PTY replacement and UI mode changes cannot discard unsent input.
     const imeEnterGesture = useImeEnterGestureOwnership()
-    const draftState = useNativeChatDraft(draftScopeKey, imeEnterGesture.isComposing)
-    const { draft, setDraft, flushDraftAppends } = draftState
+    const { draft, setDraft, flushDraftAppends } = useNativeChatDraft(
+      draftScopeKey,
+      imeEnterGesture.isComposing
+    )
     const [caret, setCaret] = useState(draft.length)
     useNativeChatLaunchDraftAdoption({
       terminalTabId,
@@ -203,7 +205,12 @@ export const NativeChatComposerPane = forwardRef<ComposerHandle, C.NativeChatCom
       setNotice
     })
 
-    const dictation = useNativeChatDictation(textareaRef, disabled)
+    const dictation = useNativeChatDictation(textareaRef, disabled, {
+      enabled: !editSession && !launchPrompt,
+      paneKey,
+      messages: recallSource?.messages,
+      sessionWorking: isWorking
+    })
     // What option commands and PTY sends share to reach, and read, the agent's input line.
     const ptyCommandTarget = {
       agent,
@@ -258,7 +265,7 @@ export const NativeChatComposerPane = forwardRef<ComposerHandle, C.NativeChatCom
       optimisticSendOutcome,
       terminalTabId
     })
-    const submission = useNativeChatComposerSubmit({
+    const { goalMode, ...submission } = useNativeChatComposerSubmit({
       agent,
       textareaRef,
       structuredTransport,
@@ -276,7 +283,6 @@ export const NativeChatComposerPane = forwardRef<ComposerHandle, C.NativeChatCom
       setCaret
     })
 
-    const { goalMode } = submission
     const { sendHeld, ...sendButton } = nativeChatComposerSendState({
       agent,
       draft,
@@ -378,9 +384,6 @@ export const NativeChatComposerPane = forwardRef<ComposerHandle, C.NativeChatCom
           isStopping={isStopping}
           afterStop={afterStop}
           attachDisabled={attachDisabled}
-          dictationDisabled={dictation.dictationDisabled}
-          isDictating={dictation.isDictating}
-          isDictationHoldMode={dictation.isDictationHoldMode}
           imeEnterGesture={imeEnterGesture}
           {...draftEvents}
           onKeyDown={handleKeyDown}
@@ -392,9 +395,7 @@ export const NativeChatComposerPane = forwardRef<ComposerHandle, C.NativeChatCom
           onChooseMentionFile={completeMention}
           onRemoveImageAttachment={attachments.removeImageAttachment}
           onAttach={fileDrops.pickAttachments}
-          onDictationToggle={dictation.toggleDictation}
-          onDictationHoldStart={dictation.startHoldDictation}
-          onDictationHoldEnd={dictation.stopHoldDictation}
+          {...dictation.fieldProps}
           onSend={send}
           steerPreview={steerChord.preview}
           onSteerPreview={steerChord.runPreview}

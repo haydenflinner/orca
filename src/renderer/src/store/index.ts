@@ -40,6 +40,7 @@ import { createDetectedAgentsSlice } from './slices/agent-inventory/create-detec
 import { createRuntimeDetectedAgentsSlice } from './slices/agent-inventory/runtime-detected-agents'
 import { createWorktreeNavHistorySlice } from './slices/ui/workspace-navigation-history'
 import { createDictationSlice } from './slices/dictation/dictation'
+import { createNativeChatVoiceModeSlice } from './slices/dictation/native-chat-voice-mode'
 import { createWorkspaceCleanupSlice } from './slices/workspace-cleanup/create-workspace-cleanup-slice'
 import { createWorkspaceCleanupBrowseSlice } from './slices/workspace-cleanup/workspace-cleanup-browse'
 import { createRuntimeStatusSlice } from './slices/runtime-status/create-runtime-status-slice'
@@ -141,6 +142,7 @@ export const useAppStore = create<AppState>()(
               ...createRuntimeDetectedAgentsSlice(...a),
               ...createWorktreeNavHistorySlice(...a),
               ...createDictationSlice(...a),
+              ...createNativeChatVoiceModeSlice(...a),
               ...createWorkspaceCleanupSlice(...a),
               ...createWorkspaceCleanupBrowseSlice(...a),
               ...createRuntimeStatusSlice(...a),

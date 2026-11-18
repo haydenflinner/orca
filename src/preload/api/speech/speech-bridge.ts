@@ -11,6 +11,7 @@ import type {
   SpeechModelManifest,
   SpeechModelState,
   SpeechPendingEvent,
+  SpeechSpeakResult,
   SpeechTranscriptEvent
 } from '../../../shared/speech/speech-types'
 import type { PreloadApi } from '../../api-types'
@@ -108,6 +109,9 @@ export const speechApi = {
     ipcRenderer.invoke('speech:cleanUpDictation', { text, context, requestId }),
   cancelDictationCleanup: (requestId: string): Promise<void> =>
     ipcRenderer.invoke('speech:cancelDictationCleanup', requestId),
+  speak: (text: string, options?: { rate?: number }): Promise<SpeechSpeakResult> =>
+    ipcRenderer.invoke('speech:speak', { text, rate: options?.rate }),
+  stopSpeak: (): Promise<void> => ipcRenderer.invoke('speech:stopSpeak'),
 
   onPartialTranscript: (callback: (data: SpeechTranscriptEvent) => void): (() => void) => {
     const listener = (_event: Electron.IpcRendererEvent, data: SpeechTranscriptEvent): void =>

@@ -2,17 +2,38 @@ import type { NativeChatComposerInput } from './native-chat-composer-input'
 import { useCallback, useState, type RefObject } from 'react'
 import { useAppStore } from '../../../../store/index'
 import { dispatchDictationControl } from '../../../dictation/dictation-control-events'
+import {
+  useNativeChatVoiceMode,
+  type NativeChatVoiceModeControl
+} from '../../voice/use-native-chat-voice-mode'
+import type { NativeChatMessage } from '../../../../../../shared/native-chat/native-chat-types'
 
-export function useNativeChatDictation(
-  textareaRef: RefObject<NativeChatComposerInput | null>,
-  disabled: boolean
-): {
+export type NativeChatDictationVoiceArgs = {
+  /** Off in edit and launch composes, which have no live transcript to speak. */
+  enabled: boolean
+  paneKey: string
+  messages: readonly NativeChatMessage[] | undefined
+  sessionWorking: boolean
+}
+
+/** The dictation and voice-mode props `NativeChatComposerField` consumes, under their prop names. */
+export type NativeChatComposerVoiceFieldProps = {
   dictationDisabled: boolean
   isDictating: boolean
   isDictationHoldMode: boolean
-  toggleDictation: () => void
-  startHoldDictation: () => void
-  stopHoldDictation: () => void
+  onDictationToggle: () => void
+  onDictationHoldStart: () => void
+  onDictationHoldEnd: () => void
+  voiceMode: NativeChatVoiceModeControl | undefined
+}
+
+export function useNativeChatDictation(
+  textareaRef: RefObject<NativeChatComposerInput | null>,
+  disabled: boolean,
+  voice?: NativeChatDictationVoiceArgs
+): {
+  isDictating: boolean
+  fieldProps: NativeChatComposerVoiceFieldProps
 } {
   const [dictationPressed, setDictationPressed] = useState(false)
   const dictationState = useAppStore((store) => store.dictationState)
@@ -23,6 +44,13 @@ export function useNativeChatDictation(
     dictationState === 'listening' ||
     dictationState === 'stopping'
   const dictationDisabled = !isDictating && (disabled || voiceSettings?.enabled !== true)
+  const voiceMode = useNativeChatVoiceMode({
+    enabled: voice?.enabled === true,
+    paneKey: voice?.paneKey ?? '',
+    messages: voice?.messages,
+    sessionWorking: voice?.sessionWorking === true,
+    disabled
+  })
   const focusForDictation = useCallback(() => textareaRef.current?.focus(), [textareaRef])
   const toggleDictation = useCallback(() => {
     if (isDictating) {
@@ -45,11 +73,15 @@ export function useNativeChatDictation(
     dispatchDictationControl('stop')
   }, [])
   return {
-    dictationDisabled,
     isDictating,
-    isDictationHoldMode: voiceSettings?.dictationMode === 'hold',
-    toggleDictation,
-    startHoldDictation,
-    stopHoldDictation
+    fieldProps: {
+      dictationDisabled,
+      isDictating,
+      isDictationHoldMode: voiceSettings?.dictationMode === 'hold',
+      onDictationToggle: toggleDictation,
+      onDictationHoldStart: startHoldDictation,
+      onDictationHoldEnd: stopHoldDictation,
+      voiceMode: voice?.enabled === true ? voiceMode : undefined
+    }
   }
 }

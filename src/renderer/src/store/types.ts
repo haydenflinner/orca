@@ -33,6 +33,7 @@ import type { DetectedAgentsSlice } from './slices/agent-inventory/create-detect
 import type { RuntimeDetectedAgentsSlice } from './slices/agent-inventory/runtime-detected-agents'
 import type { WorktreeNavHistorySlice } from './slices/ui/workspace-navigation-history'
 import type { DictationSlice } from './slices/dictation/dictation'
+import type { NativeChatVoiceModeSlice } from './slices/dictation/native-chat-voice-mode'
 import type { WorkspaceCleanupSlice } from './slices/workspace-cleanup/create-workspace-cleanup-slice'
 import type { WorkspaceCleanupBrowseSlice } from './slices/workspace-cleanup/workspace-cleanup-browse'
 import type { RuntimeStatusSlice } from './slices/runtime-status/runtime-status-types'
@@ -86,6 +87,7 @@ export type AppState = RepoSlice &
   RuntimeDetectedAgentsSlice &
   WorktreeNavHistorySlice &
   DictationSlice &
+  NativeChatVoiceModeSlice &
   WorkspaceCleanupSlice &
   WorkspaceCleanupBrowseSlice &
   RuntimeStatusSlice &

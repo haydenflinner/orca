@@ -9,6 +9,7 @@ import type {
   SpeechModelManifest,
   SpeechModelState,
   SpeechPendingEvent,
+  SpeechSpeakResult,
   SpeechTranscriptEvent
 } from '../../../shared/speech/speech-types'
 
@@ -46,6 +47,9 @@ export type SpeechApi = {
     requestId: string
   ) => Promise<DictationCleanupResult>
   cancelDictationCleanup?: (requestId: string) => Promise<void>
+  /** Local `say` playback; absent where the client has no local TTS (paired web, non-macOS hosts). */
+  speak?: (text: string, options?: { rate?: number }) => Promise<SpeechSpeakResult>
+  stopSpeak?: () => Promise<void>
   onPartialTranscript: (callback: (data: SpeechTranscriptEvent) => void) => () => void
   onFinalTranscript: (callback: (data: SpeechTranscriptEvent) => void) => () => void
   onSpeechPending: (callback: (data: SpeechPendingEvent) => void) => () => void
