@@ -20,6 +20,8 @@ export type StructuredSendAdmissionParams = {
   envelope: { clientOperationId: string }
   body: AgentJournalMessageItem
   delivery?: 'queue-if-active'
+  /** Marks the send for the agent's side chain; the stored body carries it to dispatch. */
+  side?: true
   queuedImageCards?: boolean
   options?: Readonly<Record<string, string>>
   selection?: Readonly<Record<string, string>>
@@ -69,13 +71,15 @@ export async function admitStructuredAgentSessionSend(
     : params.body.from
       ? AGENT_MESSAGE_SOURCE
       : undefined
+  // sentAs is host metadata: the provider never echoes it, so echo matching hashes the bare body.
+  const body = params.side === true ? { ...params.body, sentAs: 'side' as const } : params.body
   try {
     const commit = await ctx.journal.write(
       {
         kind: 'send-admission',
         input: {
           clientMessageId: params.envelope.clientOperationId,
-          body: params.body,
+          body,
           payloadFingerprint: agentSessionSendBodyFingerprint(ctx.sessionId, params.body),
           fence: ctx.fence,
           handoverRecorded: true,

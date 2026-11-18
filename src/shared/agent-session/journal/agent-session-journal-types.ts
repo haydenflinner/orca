@@ -60,7 +60,7 @@ export type AgentJournalBoundedPayload = {
 /** How a user message reached the provider when it was not an ordinary turn
  *  input. Persisted and open for growth: a reader that cannot place a value
  *  renders an ordinary message. */
-export const AGENT_JOURNAL_MESSAGE_SEND_MODES = ['goal'] as const
+export const AGENT_JOURNAL_MESSAGE_SEND_MODES = ['goal', 'side'] as const
 export type AgentJournalMessageSendMode = (typeof AGENT_JOURNAL_MESSAGE_SEND_MODES)[number]
 
 /** Unknown persisted message states read as completed. */
@@ -74,7 +74,9 @@ export type AgentJournalMessageItem = {
   role: NativeChatRole
   blocks: NativeChatBlock[]
   /** Absent ⇒ an ordinary turn input. `goal` ⇒ the text was set as the thread
-   *  goal's objective, and the provider pursues it without a turn of its own. */
+   *  goal's objective, and the provider pursues it without a turn of its own.
+   *  `side` ⇒ the send was marked for the agent's read-only side chain; agents
+   *  without chain support deliver it ordinarily. */
   sentAs?: AgentJournalMessageSendMode
   /** Present on a conversation command the user sent, such as `/compact`. The text is what the
    *  user typed; this names the command and its instructions so no reader parses it. Open like

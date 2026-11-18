@@ -130,6 +130,7 @@ export function useStructuredAgentSessionSends(args: {
           ? { usageLimitContinuationOfTurnItemId: request.usageLimitContinuationOfTurnItemId }
           : {}),
         ...(delivery ? { delivery } : {}),
+        ...(request?.side ? { side: true as const } : {}),
         ...captured,
         ...(takesSkills && request?.skills?.length ? { skills: request.skills } : {}),
         ...(stopping ? { sentWhileStopping: true as const } : {})

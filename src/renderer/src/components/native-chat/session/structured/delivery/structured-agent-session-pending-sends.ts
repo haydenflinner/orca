@@ -9,6 +9,8 @@ export type StructuredAgentSessionPendingSend = {
   previewUris: readonly string[]
   queuedAt: number
   delivery?: 'queue-if-active'
+  /** Marked `/btw`-family send; the host routes it to the agent's side chain where offered. */
+  side?: true
   selection?: Readonly<Record<string, string>>
   options?: Readonly<Record<string, string>>
   usageLimitContinuationOfTurnItemId?: string

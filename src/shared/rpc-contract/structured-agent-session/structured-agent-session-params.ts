@@ -93,6 +93,9 @@ export const SendParams = z
     /** Host-held draft while active; gate strict payloads on agent-session.queued-messages.v2.
      * Operation fingerprint only, never body fingerprint. */
     delivery: z.literal('queue-if-active').optional(),
+    /** Marks the send for the agent's side chain; requires agent-session.send-side.v1.
+     * Operation fingerprint only. */
+    side: z.literal(true).optional(),
     /** Preserve composer options until dispatch; requires agent-session.send-options.v1. Operation fingerprint only. */
     options: AgentSessionOptions.optional(),
     selection: AgentSessionSelectionSchema.optional(),

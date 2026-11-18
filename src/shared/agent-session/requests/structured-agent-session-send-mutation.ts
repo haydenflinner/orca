@@ -14,6 +14,8 @@ import { structuredAgentSessionPayloadFingerprint } from '../lifecycle/operation
 /** Control fields affect the operation fingerprint, never the body hash used for provider echoes. */
 export type StructuredAgentSessionSendControl = {
   delivery?: 'queue-if-active'
+  /** Marks the send for the agent's read-only side chain; the host stamps it on the body. */
+  side?: true
   options?: Readonly<Record<string, string>>
   selection?: Readonly<Record<string, string>>
   usageLimitContinuationOfTurnItemId?: string
@@ -29,6 +31,7 @@ export function agentSessionSendControlFields(
 ): StructuredAgentSessionSendControl {
   return {
     ...(send.delivery ? { delivery: send.delivery } : {}),
+    ...(send.side ? { side: send.side } : {}),
     ...(send.options ? { options: send.options } : {}),
     ...(send.selection !== undefined ? { selection: send.selection } : {}),
     ...(send.usageLimitContinuationOfTurnItemId

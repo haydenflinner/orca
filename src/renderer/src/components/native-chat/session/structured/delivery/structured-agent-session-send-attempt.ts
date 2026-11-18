@@ -13,7 +13,10 @@ import {
 import type { AgentSessionWriteNoticePart } from '../../../../../../../shared/agent-session/failures/agent-session-write-notice-copy'
 import { structuredAgentSessionMessageSendMutation } from '../../../../../../../shared/agent-session/requests/structured-agent-session-send-mutation'
 import { structuredAgentSessionBlocksTooLarge } from '../../../../../../../shared/rpc-contract/structured-agent-session/structured-agent-session-message-params'
-import { AGENT_SESSION_SEND_SKILLS_RUNTIME_CAPABILITY } from '../../../../../../../shared/agent-session/lifecycle/operations/agent-session-create-capabilities'
+import {
+  AGENT_SESSION_SEND_SIDE_RUNTIME_CAPABILITY,
+  AGENT_SESSION_SEND_SKILLS_RUNTIME_CAPABILITY
+} from '../../../../../../../shared/agent-session/lifecycle/operations/agent-session-create-capabilities'
 import {
   structuredAgentSessionSendEvidence,
   type StructuredAgentSessionSendAnswer,
@@ -111,6 +114,7 @@ export async function attemptStructuredAgentSessionSend(args: {
   }
   let fence: number | null
   let body = entry.body
+  let side = false
   try {
     if (target.kind === 'environment') {
       await ensureRuntimeEnvironmentCompatible(target.environmentId)
@@ -126,6 +130,10 @@ export async function attemptStructuredAgentSessionSend(args: {
       const { skills: _skills, ...compatibleBody } = body
       body = compatibleBody
     }
+    // An older host steers the send as before rather than refusing its strict field.
+    side =
+      entry.side === true &&
+      (await structuredAgentSessionHostSupports(target, AGENT_SESSION_SEND_SIDE_RUNTIME_CAPABILITY))
   } catch (error) {
     return args.abandoned() ? null : { kind: 'not-sent', parts: notSentParts(error) }
   }
@@ -142,6 +150,7 @@ export async function attemptStructuredAgentSessionSend(args: {
     expectedRuntimeFence: fence,
     body,
     ...(entry.delivery ? { delivery: entry.delivery } : {}),
+    ...(side ? { side: true as const } : {}),
     ...(entry.options ? { options: entry.options } : {}),
     ...(entry.selection !== undefined ? { selection: entry.selection } : {}),
     ...(entry.usageLimitContinuationOfTurnItemId
