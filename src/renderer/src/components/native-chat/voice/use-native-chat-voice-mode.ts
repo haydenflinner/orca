@@ -64,12 +64,12 @@ export function useNativeChatVoiceMode({
   const prevPhaseRef = useRef(dictationPhase)
 
   const ttsSupported =
-    typeof window.api.speech.speak === 'function' && getShortcutPlatform() === 'darwin'
+    typeof window.api?.speech?.speak === 'function' && getShortcutPlatform() === 'darwin'
   const available = enabled && ttsSupported && voice?.enabled === true && !disabled
   const listening = armed && isDictationUnderway(dictationPhase)
 
   const stopSpeak = useLatestHandler(() => {
-    void window.api.speech.stopSpeak?.()
+    void window.api?.speech?.stopSpeak?.()
   })
   const sendNow = useLatestHandler(() => send?.())
 
@@ -92,7 +92,7 @@ export function useNativeChatVoiceMode({
     pendingRef.current += 1
     setSpeaking(true)
     void (
-      window.api.speech.speak?.(text, {
+      window.api?.speech?.speak?.(text, {
         rate: voice?.ttsRate ?? DEFAULT_TTS_WORDS_PER_MINUTE
       }) ?? Promise.resolve(undefined)
     )

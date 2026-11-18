@@ -1,5 +1,5 @@
-import { spawn as nodeSpawn, type ChildProcessByStdio } from 'node:child_process'
-import type { Writable } from 'node:stream'
+import { spawnProcess } from '@orca/process-host'
+import type { PipedProcessSpawner } from '@orca/process-host/process-spec'
 import type { SpeechSpeakOutcome } from '../../shared/speech/speech-types'
 
 const MAX_SPEAK_TEXT_LENGTH = 20_000
@@ -12,25 +12,25 @@ type SayUtterance = {
   resolve: (outcome: SpeechSpeakOutcome) => void
 }
 
-type SayChild = ChildProcessByStdio<Writable, null, null>
+type SayChild = ReturnType<PipedProcessSpawner>
 
 export type SayTtsServiceOptions = {
   platform?: NodeJS.Platform
-  spawn?: typeof nodeSpawn
+  spawn?: PipedProcessSpawner
   logger?: Pick<Console, 'warn'>
 }
 
 /** Serial `say` playback: one child at a time, its text written to stdin so argv length and quoting never apply. */
 export class SayTtsService {
   private readonly platform: NodeJS.Platform
-  private readonly spawn: typeof nodeSpawn
+  private readonly spawn: PipedProcessSpawner
   private readonly logger: Pick<Console, 'warn'>
   private readonly queue: SayUtterance[] = []
   private current: { child: SayChild; utterance: SayUtterance; interrupted: boolean } | null = null
 
   constructor(options: SayTtsServiceOptions = {}) {
     this.platform = options.platform ?? process.platform
-    this.spawn = options.spawn ?? nodeSpawn
+    this.spawn = options.spawn ?? spawnProcess
     this.logger = options.logger ?? console
   }
 
@@ -88,9 +88,10 @@ export class SayTtsService {
     }
     let child: SayChild
     try {
-      child = this.spawn('say', rate === null ? [] : ['-r', String(rate)], {
-        stdio: ['pipe', 'ignore', 'ignore'],
-        windowsHide: true
+      child = this.spawn({
+        program: 'say',
+        args: rate === null ? [] : ['-r', String(rate)],
+        stdio: 'pipe'
       })
     } catch (error) {
       this.logger.warn('[tts] failed to spawn say', error)

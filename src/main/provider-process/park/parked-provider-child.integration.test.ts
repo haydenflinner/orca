@@ -88,6 +88,7 @@ function track(child: ProviderChild): Tracked {
     output: () => output,
     untilOutput: (text) =>
       new Promise((resolve, reject) => {
+        // ast-grep-ignore: test-no-real-time-wait -- failure watchdog, not a progress wait
         const timer = setTimeout(
           () => reject(new Error(`missing output: ${text}; saw: ${output}`)),
           15_000
@@ -141,6 +142,7 @@ describe.runIf(process.platform !== 'win32')('parked provider child', () => {
     await first.closed
     expect(providerPid).toBeDefined()
     expect(pidAlive(providerPid!)).toBe(true)
+    // ast-grep-ignore: test-no-real-time-wait -- lets the supervisor buffer ticks during the detached window so adoption exercises the replay path; the buffer is not observable
     await delay(150)
 
     const adopted = track(open(launch(TICK_PROVIDER), 'session-b').child)
