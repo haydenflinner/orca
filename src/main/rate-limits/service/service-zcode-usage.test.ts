@@ -34,6 +34,14 @@ vi.mock('../providers/muse/muse-usage-fetcher', () => ({
   fetchMuseRateLimits: vi.fn()
 }))
 
+vi.mock('../providers/devin/devin-usage-fetcher', () => ({
+  fetchDevinRateLimits: vi.fn()
+}))
+
+vi.mock('../providers/devin/devin-credentials', () => ({
+  readDevinCredentials: vi.fn(() => ({ status: 'missing' }))
+}))
+
 vi.mock('../providers/antigravity/antigravity-usage-fetcher', () => ({
   fetchAntigravityRateLimits: vi.fn()
 }))

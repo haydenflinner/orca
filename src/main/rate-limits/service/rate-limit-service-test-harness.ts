@@ -14,6 +14,8 @@ import { fetchOpenCodeGoUsage } from '../providers/opencode-go/opencode-go-usage
 import { fetchZcodeRateLimits } from '../providers/zcode/zcode-usage-fetcher'
 import { fetchAntigravityRateLimits } from '../providers/antigravity/antigravity-usage-fetcher'
 import { fetchMuseRateLimits } from '../providers/muse/muse-usage-fetcher'
+import { fetchDevinRateLimits } from '../providers/devin/devin-usage-fetcher'
+import { readDevinCredentials } from '../providers/devin/devin-credentials'
 import { hasMiniMaxSessionCookie } from '../../minimax/minimax-cookie-store'
 
 export type Deferred<T> = {
@@ -91,6 +93,7 @@ export function mockFreshBackgroundProviderFetches(): void {
     unavailableProvider('antigravity')
   )
   vi.mocked(fetchMuseRateLimits).mockImplementation(async () => unavailableProvider('muse'))
+  vi.mocked(fetchDevinRateLimits).mockImplementation(async () => unavailableProvider('devin'))
 }
 
 export function resetRateLimitProviderMocks(): void {
@@ -111,8 +114,10 @@ export function resetRateLimitProviderMocks(): void {
   vi.mocked(fetchZcodeRateLimits).mockResolvedValue(unavailableProvider('zcode'))
   vi.mocked(fetchAntigravityRateLimits).mockResolvedValue(unavailableProvider('antigravity'))
   vi.mocked(fetchMuseRateLimits).mockResolvedValue(unavailableProvider('muse'))
+  vi.mocked(fetchDevinRateLimits).mockResolvedValue(unavailableProvider('devin'))
   vi.mocked(hasMiniMaxSessionCookie).mockReturnValue(false)
   vi.mocked(readGrokAuthSession).mockReturnValue({ status: 'missing' })
+  vi.mocked(readDevinCredentials).mockReturnValue({ status: 'missing' })
   vi.mocked(readCursorAuthSession).mockResolvedValue({ status: 'missing' })
 }
 

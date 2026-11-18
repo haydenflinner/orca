@@ -6,6 +6,7 @@ import {
 } from './service-sibling-provider-result'
 import { disabledUsageSnapshot } from './disabled-usage-snapshot'
 import { prepareMuseUsageFetch } from './service-muse-usage-fetch'
+import { prepareDevinUsageFetch } from './service-devin-usage-fetch'
 import type { ProviderRateLimits } from '../../../shared/agent-usage/rate-limits/rate-limit-types'
 
 function hasKnownProvenanceChange(
@@ -28,6 +29,10 @@ export abstract class RateLimitServiceFullCycleApplication extends RateLimitServ
   ): Promise<void> {
     const museBeforeFetch = this.state.muse
     const museResultPromise = this.startMuseUsageFetch(signal)
+    const devinBeforeFetch = this.state.devin
+    this.updateState({ ...this.state, devin: this.withFetchingStatus(devinBeforeFetch, 'devin') })
+    const devinFetch = prepareDevinUsageFetch(signal)
+    this.devinAuthConfigured = devinFetch.authConfigured
     const prepared = await this.prepareFetchAllCycle(signal, options)
     if (!prepared) {
       return
@@ -216,16 +221,19 @@ export abstract class RateLimitServiceFullCycleApplication extends RateLimitServ
         : this.state.minimax
     })
 
-    const [grokSettled, cursorSettled, zcodeSettled, antigravitySettled] = await Promise.all([
-      grokResultPromise,
-      cursorResultPromise,
-      zcodeResultPromise,
-      antigravityResultPromise
-    ])
+    const [grokSettled, cursorSettled, zcodeSettled, antigravitySettled, devinSettled] =
+      await Promise.all([
+        grokResultPromise,
+        cursorResultPromise,
+        zcodeResultPromise,
+        antigravityResultPromise,
+        devinFetch.resultPromise
+      ])
     if (signal.aborted) {
       return
     }
     const grok = settleSiblingProviderResult('grok', grokSettled)
+    const devin = settleSiblingProviderResult('devin', devinSettled)
     const cursor = settleSiblingProviderResult('cursor', cursorSettled)
     const settledZcode = settleSiblingProviderResult('zcode', zcodeSettled)
     const zcode = isZcodeUsageCredentialCurrent(settledZcode)
@@ -250,6 +258,7 @@ export abstract class RateLimitServiceFullCycleApplication extends RateLimitServ
       zcodeAccount !== undefined &&
       previousZcodeAccount === zcodeAccount
     this.trackActiveFailureStreak('grok', grok)
+    this.trackActiveFailureStreak('devin', devin)
     this.trackActiveFailureStreak('cursor', cursor)
     if (shouldApplyZcode) {
       this.trackActiveFailureStreak('zcode', zcode)
@@ -260,6 +269,7 @@ export abstract class RateLimitServiceFullCycleApplication extends RateLimitServ
     this.updateState({
       ...this.state,
       grok: this.applyStalePolicy(grok, previousState.grok),
+      devin: this.applyStalePolicy(devin, devinBeforeFetch),
       cursor: cursorAccountChanged ? cursor : this.applyStalePolicy(cursor, previousState.cursor),
       zcode: !shouldApplyZcode
         ? this.state.zcode

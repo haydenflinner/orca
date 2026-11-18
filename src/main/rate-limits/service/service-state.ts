@@ -28,6 +28,7 @@ import type { NormalizedClaudeAccountSelectionTarget } from '../../claude-accoun
 import type { InactiveClaudeAccount } from '../providers/claude/claude-managed-account-usage'
 import type { NetworkProxySettings } from '../../../shared/network/network-proxy'
 import { readGrokAuthSession } from '../providers/grok/grok-auth'
+import { readDevinCredentials } from '../providers/devin/devin-credentials'
 
 export abstract class RateLimitServiceState {
   protected state: InternalRateLimitState = {
@@ -41,9 +42,11 @@ export abstract class RateLimitServiceState {
     grok: null,
     cursor: null,
     zcode: null,
-    muse: null
+    muse: null,
+    devin: null
   }
   protected grokAuthConfigured = readGrokAuthSession().status === 'ok'
+  protected devinAuthConfigured = readDevinCredentials().status === 'ok'
   // Async Keychain/desktop DB probing belongs in fetch cycles, never synchronous construction.
   protected cursorAuthConfigured = false
   protected openCodeGoApiKeyConfigured = false
@@ -62,7 +65,8 @@ export abstract class RateLimitServiceState {
     antigravity: 0,
     cursor: 0,
     zcode: 0,
-    muse: 0
+    muse: 0,
+    devin: 0
   }
   // Failures increase activation backoff; success/unavailable resets it.
   protected activeFailureStreakByProvider: Record<ActiveRateLimitProvider, number> = {
@@ -76,7 +80,8 @@ export abstract class RateLimitServiceState {
     antigravity: 0,
     cursor: 0,
     zcode: 0,
-    muse: 0
+    muse: 0,
+    devin: 0
   }
   protected mainWindow: BrowserWindow | null = null
   /** Paired clients streaming usage (accounts.subscribe); headless hosts have no window to watch. */
