@@ -53,13 +53,14 @@ export function journalItemCliLines(item: AgentJournalRenderItem): string[] {
         return []
       }
       const role = body.role === 'reasoning' ? 'reasoning' : body.role
-      return [`${owner}${role}: ${clip(text)}`]
+      const cut = item.shortened === true ? ' [shortened]' : ''
+      return [`${owner}${role}: ${clip(text)}${cut}`]
     }
     case 'tool-call': {
       const input = body.input === undefined ? '' : ` ${clip(JSON.stringify(body.input))}`
       const output = body.output && body.output.head.length > 0 ? `\n${clip(body.output.head)}` : ''
       const cut = body.output?.truncated ? ' [truncated]' : ''
-      return [`${owner}tool ${body.name} (${body.state}):${input}${output}${cut}`]
+      return [`${owner}tool ${String(body.name)} (${body.state}):${input}${output}${cut}`]
     }
     case 'diff': {
       const cut = body.patch.truncated ? ' [truncated]' : ''
