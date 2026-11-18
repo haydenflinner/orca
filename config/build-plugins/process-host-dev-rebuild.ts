@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { tmpdir } from 'node:os'
 import { basename, dirname, join, resolve } from 'node:path'
@@ -54,6 +54,16 @@ function processHostInputs(
   }
 }
 
+// FSEvents reports canonical paths; a watched root reached through a symlink (e.g. /tmp) must
+// compare canonically or watchChange ids can never match the tracked set.
+function canonical(file: string): string {
+  try {
+    return realpathSync(resolve(file))
+  } catch {
+    return resolve(file)
+  }
+}
+
 export function createProcessHostDevRebuildPlugin(root = process.cwd()): Plugin {
   const directoryWatchers = new Map<string, { recursive: boolean; watcher: ts.FileWatcher }>()
   let signalDirectory: string | undefined
@@ -65,7 +75,7 @@ export function createProcessHostDevRebuildPlugin(root = process.cwd()): Plugin 
   return {
     name: 'orca-process-host-dev-rebuild',
     watchChange(id) {
-      const file = resolve(id)
+      const file = canonical(id)
       if (packageFiles.has(file) || file === signalFile) {
         packageDirty = true
       }
@@ -78,13 +88,13 @@ export function createProcessHostDevRebuildPlugin(root = process.cwd()): Plugin 
       const inputs =
         packageDirty || !cachedInputs ? processHostInputs(root, compiler) : cachedInputs
       cachedInputs = inputs
-      packageFiles = new Set(inputs.files.map((file) => resolve(file)))
+      packageFiles = new Set(inputs.files.map(canonical))
       for (const file of inputs.files) {
         this.addWatchFile(file)
       }
       // The installed bundler invalidates exact files; source creation needs a private watch signal.
       if (!signalDirectory) {
-        signalDirectory = mkdtempSync(join(tmpdir(), 'orca-process-host-watch-'))
+        signalDirectory = realpathSync(mkdtempSync(join(tmpdir(), 'orca-process-host-watch-')))
         signalFile = join(signalDirectory, 'source-directory-change')
         writeFileSync(signalFile, String(signalVersion))
       }

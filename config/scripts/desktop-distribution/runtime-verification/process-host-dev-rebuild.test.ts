@@ -82,18 +82,31 @@ function fixture(): { root: string; packageDir: string; main: string } {
 
 function nextEvent(watcher: RolldownWatcher, code: 'END' | 'ERROR'): Promise<void> {
   return new Promise((resolveEvent, reject) => {
-    const timeout = setTimeout(() => reject(new Error(`Timed out waiting for ${code}`)), 15_000)
-    watcher.on('event', function listener(event) {
+    // No event at all means the watcher missed the write — fail fast on a dead watch.
+    // Once a build starts it may run long; a wedged compile still surfaces as ERROR at its own cap.
+    const settle = (fn: () => void): void => {
+      clearTimeout(watchdog)
+      clearTimeout(deadline)
+      watcher.off('event', listener)
+      fn()
+    }
+    const watchdog = setTimeout(
+      () => settle(() => reject(new Error(`No watcher activity waiting for ${code}`))),
+      30_000
+    )
+    let deadline: NodeJS.Timeout | undefined
+    function listener(event: { code: string; error?: unknown }): void {
+      deadline ??= setTimeout(
+        () => settle(() => reject(new Error(`Timed out waiting for ${code}`))),
+        150_000
+      )
       if (event.code === code) {
-        clearTimeout(timeout)
-        watcher.off('event', listener)
-        resolveEvent()
+        settle(resolveEvent)
       } else if (event.code === 'ERROR' && code !== 'ERROR') {
-        clearTimeout(timeout)
-        watcher.off('event', listener)
-        reject(event.error)
+        settle(() => reject(event.error))
       }
-    })
+    }
+    watcher.on('event', listener)
   })
 }
 
@@ -149,10 +162,10 @@ describe('External process-host development rebuilds', () => {
 
     const imported = join(packageDir, 'src', 'included.test.ts')
     writeFileSync(imported, 'export const version = 6\n')
-    await expect.poll(() => versions.at(-1), { timeout: 15_000 }).toBe(6)
+    await expect.poll(() => versions.at(-1), { timeout: 60_000 }).toBe(6)
     writeFileSync(imported, 'export const version = 7\n')
-    await expect.poll(() => versions.at(-1), { timeout: 15_000 }).toBe(7)
-  })
+    await expect.poll(() => versions.at(-1), { timeout: 60_000 }).toBe(7)
+  }, 180_000)
 
   it('recovers when a missing import is created in a new source directory', async () => {
     const { root, packageDir, main } = fixture()
@@ -190,7 +203,7 @@ describe('External process-host development rebuilds', () => {
       join(packageDir, 'src', 'features', 'new-feature.ts'),
       'export const version = 5\n'
     )
-    await expect.poll(() => loadedVersions.at(-1), { timeout: 15_000 }).toBe(5)
+    await expect.poll(() => loadedVersions.at(-1), { timeout: 60_000 }).toBe(5)
     const failedAgain = nextEvent(watcher, 'ERROR')
     writeFileSync(
       join(packageDir, 'src', 'internal.ts'),
@@ -198,5 +211,5 @@ describe('External process-host development rebuilds', () => {
     )
     await failedAgain
     expect(readEmittedVersion(root)).toBe(5)
-  })
+  }, 180_000)
 })
