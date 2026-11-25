@@ -12,7 +12,7 @@ import {
   normalizeExecutionHostOrder,
   normalizeVisibleExecutionHostIds
 } from '../../../../../shared/execution-host/execution-host'
-import { normalizeFeatureInteractions } from '../../../../../shared/feature-education/interactions/feature-interactions'
+import { hydrateFeatureInteractions } from './ui-slice-feature-interactions-hydration'
 import { normalizeContextualTourIds } from '../../../../../shared/feature-education/contextual-tours/contextual-tours'
 import { normalizeFeatureTipIds } from '../../../../../shared/feature-education/feature-tips'
 import { DEFAULT_HIDE_SLEEPING_WORKSPACES } from '../../../../../shared/workspace-view/sleeping-workspace-visibility'
@@ -62,15 +62,16 @@ import {
   sanitizePerWorktreePreferences,
   sanitizeWorkspaceCleanupDismissals,
   sanitizePersistedSidebarWidth,
-  sanitizeActivityBarPosition,
-  hydratedUIPartialMatchesState,
+  sanitizeActivityBarArrangement,
+  keepUnchangedHydratedFields,
+  hydratedFieldsAreState,
   clampPetSize
 } from './ui-slice-hydration-sanitizers'
 import {
-  hydrateAgentReadState,
   hydrateOneShotNoticesSeen,
+  hydrateReadAndBotState,
   sanitizeTaskResumeState
-} from './ui-slice-hydration-values'
+} from './ui-slice-bot-sidebar-hydration'
 import { hydrateWslMovedSection } from './ui-slice-wsl-moved-section-actions'
 import { hydrateBrowserPaneLayout } from './browser-pane-layout-hydration'
 import { hydrateStatusBarItems } from './ui-slice-hydration-status-bar-items'
@@ -129,7 +130,7 @@ export function createUiHydrationActions(set: UISliceSet, _get: UISliceGet): Par
           sidebarOpen: typeof ui.sidebarOpen === 'boolean' ? ui.sidebarOpen : true,
           rightSidebarOpen: typeof ui.rightSidebarOpen === 'boolean' ? ui.rightSidebarOpen : true,
           ...normalizeRightSidebarRoute(ui.rightSidebarTab, ui.rightSidebarExplorerView),
-          activityBarPosition: sanitizeActivityBarPosition(ui.activityBarPosition),
+          ...sanitizeActivityBarArrangement(ui, s),
           groupBy: (ui.groupBy as UISlice['groupBy'] | 'parent') === 'parent' ? 'repo' : ui.groupBy,
           sortBy,
           // Why: main-process getUI() already normalized this (defaulting to 'manual'); read it through without migrating.
@@ -206,19 +207,11 @@ export function createUiHydrationActions(set: UISliceSet, _get: UISliceGet): Par
           }),
           customPets,
           // Why: fall back to default when the persisted id is unknown (e.g. custom pet removed elsewhere) so the overlay renders.
-          petId: ((): string => {
-            const id = petId
-            if (typeof id !== 'string') {
-              return DEFAULT_PET_ID
-            }
-            if (isBundledPetId(id)) {
-              return id
-            }
-            if (customPets.some((m) => m.id === id)) {
-              return id
-            }
-            return DEFAULT_PET_ID
-          })(),
+          petId:
+            typeof petId === 'string' &&
+            (isBundledPetId(petId) || customPets.some((m) => m.id === petId))
+              ? petId
+              : DEFAULT_PET_ID,
           dismissedUpdateVersion: ui.dismissedUpdateVersion ?? null,
           ...hydrateUnexpectedSignoutDismissal(s, ui.dismissedUnexpectedSignoutVersion),
           // Reject channels unknown to this build; activeChannel falls back only on null, otherwise leaking invalid values to listBuilds/controls.
@@ -235,7 +228,7 @@ export function createUiHydrationActions(set: UISliceSet, _get: UISliceGet): Par
           ...hydrateBrowserPaneLayout(ui),
           taskResumeState: sanitizeTaskResumeState(ui.taskResumeState),
           featureTipsSeenIds: normalizeFeatureTipIds(ui.featureTipsSeenIds),
-          featureInteractions: normalizeFeatureInteractions(ui.featureInteractions),
+          ...hydrateFeatureInteractions(s.workspaceBoardUsedBeforeLaunch, ui),
           contextualToursSeenIds: normalizeContextualTourIds(ui.contextualToursSeenIds),
           contextualToursAutoEligible:
             typeof ui.contextualToursAutoEligible === 'boolean'
@@ -268,7 +261,7 @@ export function createUiHydrationActions(set: UISliceSet, _get: UISliceGet): Par
           statusBarCompactChangeNoticeDismissed: ui.statusBarCompactChangeNoticeDismissed !== false,
           ...hydrateOneShotNoticesSeen(ui),
           ...hydrateWslMovedSection(ui),
-          ...hydrateAgentReadState(ui),
+          ...hydrateReadAndBotState(ui),
           workspaceCleanupDismissals: sanitizeWorkspaceCleanupDismissals(
             ui.workspaceCleanup?.dismissals
           ),
@@ -282,6 +275,7 @@ export function createUiHydrationActions(set: UISliceSet, _get: UISliceGet): Par
             source === 'startup' ? sanitizeHydratedActiveView(ui.activeView) : s.activeView,
           persistedUIReady: true
         }
+        keepUnchangedHydratedFields(s, hydrated as Partial<UISlice>)
         // Capture authoritative baseline before overlaying dirty/in-flight local fields or their diff vanishes (STA-5781). Nonnumeric width fallback may differ from main until the next drag.
         const nextWriteBaseline = capturePersistedUIWriteBaseline(hydrated)
         const previousBaseline = s.persistedUIWriteBaseline
@@ -306,7 +300,7 @@ export function createUiHydrationActions(set: UISliceSet, _get: UISliceGet): Par
         const nextWriteBaselineGeneration = writeBaselineMoved
           ? s.persistedUIWriteBaselineGeneration + 1
           : s.persistedUIWriteBaselineGeneration
-        if (hydratedUIPartialMatchesState(s, hydrated as Partial<UISlice>)) {
+        if (hydratedFieldsAreState(s, hydrated as Partial<UISlice>)) {
           if (!writeBaselineMoved) {
             return s
           }

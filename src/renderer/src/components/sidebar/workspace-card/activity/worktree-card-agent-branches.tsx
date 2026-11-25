@@ -1,3 +1,4 @@
+import { agentAttentionTurnAt } from '@/attention/agent-attention-acknowledgement'
 import type { BranchContext } from './worktree-agent-branch-context'
 import React, { useCallback } from 'react'
 import { useAppStore } from '@/store/index'
@@ -100,7 +101,7 @@ const AgentBranch = React.memo(function AgentBranch({
     agent: row,
     showModel: context.showAgentModels,
     now: context.now,
-    isUnvisited: row.rowSource === 'live' && acknowledgedAt < row.entry.stateStartedAt,
+    isUnvisited: row.rowSource === 'live' && acknowledgedAt < agentAttentionTurnAt(row.entry),
     onActivate: context.onActivate,
     childAgentCount: hasChildren ? children.keys.length : undefined,
     childAgentsExpanded: expanded,

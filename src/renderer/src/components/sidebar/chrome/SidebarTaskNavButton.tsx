@@ -22,7 +22,7 @@ import {
   resolveVisibleTaskProvider
 } from '../../../../../shared/work-items/task-providers'
 import { localPreflightContextKey } from '../../../runtime/hosts/preflight/local-preflight-context-key'
-import { SidebarNavHideButton } from './sidebar-nav-controls'
+import { SIDEBAR_NAV_DIMMED_ICON_CLASS_NAME, SidebarNavHideButton } from './sidebar-nav-controls'
 
 function HideTaskSidebarMenu({ onHide }: { onHide: () => void }): React.JSX.Element {
   const t = useTranslate()
@@ -177,10 +177,7 @@ export function SidebarTaskNavButton(): React.JSX.Element | null {
             )}
           >
             <List
-              className={cn(
-                'size-4 shrink-0',
-                !tasksActive && 'text-worktree-sidebar-foreground/30'
-              )}
+              className={cn('size-4 shrink-0', !tasksActive && SIDEBAR_NAV_DIMMED_ICON_CLASS_NAME)}
               strokeWidth={tasksActive ? 2.25 : 1.75}
             />
             <span className="flex-1">

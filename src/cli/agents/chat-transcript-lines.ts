@@ -86,5 +86,7 @@ export function journalItemCliLines(item: AgentJournalRenderItem): string[] {
       return [`${owner}agent-start ${senderLabel(body.worker)}: ${clip(body.task)}`]
     case 'agent-handoff':
       return [`${owner}agent-handoff ${senderLabel(body.agent)}: ${clip(body.task)}`]
+    default:
+      return []
   }
 }

@@ -13,9 +13,14 @@ import CommentMarkdown from '../../comment-markdown/CommentMarkdown'
 import { PaletteRowShortcutBadge } from '@/components/worktree-jump/rows/worktree-jump-palette-row-content'
 import { EventTime, ThreadAgentStateIndicator } from './activity-thread-controls'
 import { ActivityThreadHoverCard } from '../thread-preview/activity-thread-hover-card'
-import { activityThreadRowCopy } from '../threads/activity-thread-presentation'
 import { agentTintStyle } from '@/lib/agent-tint/agent-tint'
 import { useAgentTint } from '@/lib/agent-tint/agent-tint-context'
+import {
+  activityThreadRowCopy,
+  activityThreadRowIdentity
+} from '../threads/activity-thread-presentation'
+import { ProjectChip } from '@/components/repo/project-chip'
+import type { ActivityGroupBy } from '../../../../../shared/agent-status/presentation/agents-view-thread-filters'
 import type { AgentPaneThread } from '../threads/activity-thread-types'
 import type { ActivityThreadClickEvent } from './use-activity-thread-selection'
 
@@ -75,7 +80,8 @@ export const ActivityThreadRow = React.memo(function ActivityThreadRow({
   showJumpAction = true,
   previewSuppressed = false,
   shortcutIndex,
-  shortcutModifierKeys
+  shortcutModifierKeys,
+  groupBy = 'none'
 }: {
   thread: AgentPaneThread
   selected: boolean
@@ -95,12 +101,14 @@ export const ActivityThreadRow = React.memo(function ActivityThreadRow({
   /** Position in the digit-jump order; revealed by `agents-index-hints-armed` on the list container. */
   shortcutIndex?: number
   shortcutModifierKeys?: readonly string[]
+  groupBy?: ActivityGroupBy
 }): React.JSX.Element {
   const t = useTranslate()
   useUiLanguageRevision()
   const { taskTitle, statusLine, statusKind, needsAttention, workspaceLabel } =
     activityThreadRowCopy(thread, t)
   const tint = useAgentTint(thread.paneKey)
+  const { showProject, showWorkspace } = activityThreadRowIdentity(thread, groupBy)
   const showMarkdownStatus = statusKind === 'message'
   const agentLabel = formatAgentTypeLabel(thread.agentType)
 
@@ -170,6 +178,7 @@ export const ActivityThreadRow = React.memo(function ActivityThreadRow({
               showMarkdownStatus ? (
                 <CommentMarkdown
                   content={statusLine}
+                  singleTildeStrikethrough={false}
                   className={cn(
                     'min-w-0 break-words text-[13px] leading-5 text-foreground/80',
                     compactMode ? 'line-clamp-2' : 'line-clamp-3',
@@ -196,8 +205,19 @@ export const ActivityThreadRow = React.memo(function ActivityThreadRow({
               <span className="inline-flex shrink-0" title={agentLabel}>
                 <AgentTypeIcon agentType={thread.agentType} size={13} />
               </span>
-              <span className="min-w-0 flex-1 truncate" title={workspaceLabel}>
-                {workspaceLabel}
+              <span className="flex min-w-0 flex-1 items-center gap-1.5">
+                {showProject && thread.repo ? (
+                  // Why: the workspace name yields width first, keeping a few characters visible.
+                  <ProjectChip
+                    repo={thread.repo}
+                    className={showWorkspace ? 'max-w-[calc(100%-3rem)]' : 'max-w-full'}
+                  />
+                ) : null}
+                {showWorkspace ? (
+                  <span className="min-w-0 truncate" title={workspaceLabel}>
+                    {workspaceLabel}
+                  </span>
+                ) : null}
               </span>
               <TooltipProvider delayDuration={800} skipDelayDuration={0}>
                 {canJump && showJumpAction ? (

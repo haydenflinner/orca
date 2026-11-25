@@ -27,7 +27,7 @@ export function PaletteRowShortcutBadge({
     <ShortcutKeyCombo
       keys={[...modifierKeys, String(index + 1)]}
       className="inline-flex gap-0.5"
-      compact
+      size="compact"
     />
   )
 }

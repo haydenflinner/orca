@@ -92,3 +92,9 @@ export function useNativeChatDictation(
     }
   }
 }
+
+export function nativeChatDictationFieldProps(
+  dictation: ReturnType<typeof useNativeChatDictation>
+) {
+  return dictation.fieldProps
+}

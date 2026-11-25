@@ -1,22 +1,15 @@
 import { worktreeRemovalLifetime } from '../../../workspaces/removal/worktree-removal-lifetime'
-import { assertRegisteredLocalWorktreePreflight } from './registered-local-worktree-preflight'
+import { prepareRegisteredLocalWorktreeRemoval } from './registered-local-worktree-preflight'
+import { getWorktreeSharedLinkPaths } from '../../../git/worktrees/content-paths/worktree-shared-directories'
 import type { Repo } from '../../../../shared/repository/repo-types'
-import { nativeWindowsMarkerMissing } from '../../../git/worktrees/removal/windows-worktree-removal'
 import type { ExecutionHostId } from '../../../../shared/execution-host/execution-host'
 import type { RemoveWorktreeResult } from '../../../../shared/worktree/create-types'
 import type { GitPushTarget } from '../../../../shared/worktree/types'
-import { assertWorktreeUnlockedForRemoval } from '../../../../shared/worktree/removal/removal'
 import type { LocalProjectWorktreeGitOptions } from '../../../workspaces/execution-host/project-runtime-git-options'
-import { listWorktreesStrict as listGitWorktreesStrict } from '../../../git/worktrees/catalog/worktree-listing'
-import { getWorktreeSharedLinkPaths } from '../../../git/worktrees/content-paths/worktree-shared-directories'
 import { withWorktreeRemoveStageSpan } from '../../../observability/instrumentation'
 import { assertNestedWorktreeRemovalApproval } from '../../../workspaces/removal/nested-worktree-removal-plan'
-import { findRegisteredDeletableWorktree } from '../../../workspaces/removal/worktree-removal-safety'
-import { CLIENT_REMOVAL_HOME } from '../../../workspaces/removal/worktree-removal-home-guard'
 import { cleanupUnusedWorktreePushTargetRemote } from '../worktree-remote'
-import { findExistingWorktreeSymlinkPaths } from '../../../git/worktrees/content-paths/worktree-symlink-detection'
 import { removeWorktreeLinkedPaths } from '../linked-paths/worktree-symlinks'
-import { formatWorktreeRemovalError } from '../paths/worktree-logic'
 import { finishLocalWorktreeRemoval } from './finish-local-worktree-removal'
 import type { RemoveWorktreeArgs } from '../ipc-context-schemas'
 import type { WorktreeIpcContext } from '../worktree-ipc-context'
@@ -36,49 +29,25 @@ export async function removeRegisteredLocalWorktree(
   hasLocalWorktreeGitOptions: boolean,
   deleteBranch: boolean
 ): Promise<RemoveWorktreeResult> {
-  const refreshedWorktrees = hasLocalWorktreeGitOptions
-    ? await listGitWorktreesStrict(repo.path, localWorktreeGitOptions)
-    : await listGitWorktreesStrict(repo.path)
-  const refreshedRegisteredWorktree = findRegisteredDeletableWorktree(
-    repo.path,
-    canonicalWorktreePath,
-    refreshedWorktrees,
-    CLIENT_REMOVAL_HOME
-  )
-  if (!refreshedRegisteredWorktree) {
-    throw new Error(
-      `Worktree registration changed during deletion: ${canonicalWorktreePath}. Retry deletion.`
-    )
-  }
-  if (args.expectedCheckout) {
-    assertNestedWorktreeRemovalApproval([refreshedRegisteredWorktree], [args.expectedCheckout])
-  }
-  try {
-    // Archive hooks can race external Git locks; recheck before destructive teardown.
-    assertWorktreeUnlockedForRemoval(refreshedRegisteredWorktree)
-  } catch (error) {
-    throw new Error(formatWorktreeRemovalError(error, canonicalWorktreePath, args.force ?? false))
-  }
-
-  // Repo shared-directory symlinks need the same ignore/unlink policy as user-configured shared paths.
   const linkedPaths = getWorktreeSharedLinkPaths(repo)
-  const ignoredLinkedPaths = args.force
-    ? []
-    : await findExistingWorktreeSymlinkPaths(canonicalWorktreePath, linkedPaths)
-  const markerMissing = await nativeWindowsMarkerMissing(
-    canonicalWorktreePath,
-    localWorktreeGitOptions
-  )
-  const toleratedUntrackedPaths = await assertRegisteredLocalWorktreePreflight(
-    repo.path,
-    canonicalWorktreePath,
-    refreshedRegisteredWorktree,
-    args.force ?? false,
-    localWorktreeGitOptions,
-    hasLocalWorktreeGitOptions,
-    ignoredLinkedPaths,
+  const {
+    refreshed: refreshedRegisteredWorktree,
+    guard,
+    toleratedUntrackedPaths,
     markerMissing
-  )
+  } = await prepareRegisteredLocalWorktreeRemoval({
+    repo,
+    canonicalWorktreePath,
+    force: args.force ?? false,
+    localOptions: localWorktreeGitOptions,
+    hasLocalOptions: hasLocalWorktreeGitOptions,
+    linkedPaths,
+    beforeUnlockCheck: (refreshed) => {
+      if (args.expectedCheckout) {
+        assertNestedWorktreeRemovalApproval([refreshed], [args.expectedCheckout])
+      }
+    }
+  })
 
   const background = backgroundRemoval.removesInBackground(
     canonicalWorktreePath,
@@ -100,6 +69,7 @@ export async function removeRegisteredLocalWorktree(
       // Unlink every ?? symlink the dirty check tolerated: git worktree remove still refuses them.
       const unlinkPaths = [...new Set([...linkedPaths, ...toleratedUntrackedPaths])]
       if (!markerMissing && unlinkPaths.length > 0) {
+        await guard.verify()
         await removeWorktreeLinkedPaths(canonicalWorktreePath, unlinkPaths)
       }
       accepted = true
@@ -133,7 +103,8 @@ export async function removeRegisteredLocalWorktree(
         refreshedRegisteredWorktree,
         removalGate,
         checkoutDeleteSignal,
-        cleanupPushTarget
+        cleanupPushTarget,
+        guard
       })
     if (!background) {
       const result = await finish()
@@ -147,6 +118,7 @@ export async function removeRegisteredLocalWorktree(
         repoId,
         repoPath: repo.path,
         worktree: refreshedRegisteredWorktree,
+        gitdir: guard.gitdir,
         deleteBranch,
         force: args.force ?? false
       },
@@ -161,8 +133,7 @@ export async function removeRegisteredLocalWorktree(
         return result
       },
       publish: () => context.runtime.publishWorktreeRemovalChange(repoId),
-      admissionFailed: () => removalGate.finish(false),
-      cleanupPushTargetRemote: cleanupPushTarget
+      admissionFailed: () => removalGate.finish(false)
     })
     await backgroundRemoval.waitForWorktreeRemovalAcceptance(args.worktreeId)
     return { removing: true }

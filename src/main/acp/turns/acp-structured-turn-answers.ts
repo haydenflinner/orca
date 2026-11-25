@@ -2,6 +2,7 @@ import type { SubmissionRejectionFact } from '../../../shared/agent-session/fail
 import type { AcpSend, AcpStructuredTurnsDeps } from './acp-turn-dispatch-contract'
 import { AcpAgentError, AcpConnectionClosedError } from '../transport/acp-errors'
 import { acpPromptRejection } from './acp-prompt-failure'
+import { agentSessionFailureWords } from '../../../shared/agent-session/failures/agent-session-failure-words'
 import type { PromptResponse } from '../generated/acp-protocol.generated'
 
 /** What a turn lane needs from its owner to settle an answered or failed prompt. */
@@ -14,6 +15,8 @@ export type AcpTurnAnswerHost = Pick<
   accept(clientMessageId: string): void
   reject(clientMessageId: string, fact: SubmissionRejectionFact): void
   finish(send: AcpSend): void
+  /** Stops and preparing steers mark the answered turn cancelled. */
+  cancelled(send: AcpSend): boolean
   /** A lost session refuses later sends. */
   markEnded(): void
 }
@@ -27,9 +30,12 @@ export function acpTurnAnswered(
     return
   }
   const { lane } = host
-  lane.apply(lane.translator.promptResult(send.clientMessageId, result, host.now()))
+  const { clientMessageId } = send
+  lane.apply(
+    lane.translator.promptResult(clientMessageId, result, host.now(), host.cancelled(send))
+  )
   host.accept(send.clientMessageId)
-  host.finish(send)
+  acpTurnFinishRetireIfLost(host, send, lane.translator.failures.takeSessionLoss())
 }
 
 export function acpTurnErrored(host: AcpTurnAnswerHost, send: AcpSend, error: unknown): void {
@@ -70,12 +76,56 @@ export function acpAgentTurnFailed(
     lane.apply(lane.translator.promptFailed(send.clientMessageId, error, host.now()))
   }
   const lost = lane.translator.sessionLost(error)
+  acpTurnFinishRetireIfLost(host, send, lost ? error : undefined)
+}
+
+export function acpTurnFinishRetireIfLost(
+  host: AcpTurnAnswerHost,
+  send: AcpSend,
+  sessionLoss: Error | undefined
+): void {
   // Held steers must not reach the dead session.
-  if (lost) {
+  if (sessionLoss !== undefined) {
     host.markEnded()
   }
   host.finish(send)
-  if (lost) {
-    host.sessionLost(error)
+  if (sessionLoss) {
+    host.sessionLost(sessionLoss)
+  }
+}
+
+export function acpCancelForSteer(args: {
+  deps: Pick<AcpStructuredTurnsDeps, 'withdrawRequests' | 'connection'>
+  send: AcpSend | null
+  steerCancelled: AcpSend | null
+  setSteerCancelled: (send: AcpSend | null) => void
+}): void {
+  const { deps, send, steerCancelled, setSteerCancelled } = args
+  if (!send) {
+    return
+  }
+  deps.withdrawRequests()
+  if (steerCancelled === send) {
+    return
+  }
+  setSteerCancelled(send)
+  deps.connection.cancel().catch(() => {
+    // A failed write lets the next steer retry.
+    setSteerCancelled(null)
+  })
+}
+
+export function acpTurnRejected(
+  host: Pick<AcpStructuredTurnsDeps, 'agentName' | 'settle'>,
+  unsettled: Set<string>,
+  clientMessageId: string,
+  fact: SubmissionRejectionFact
+): void {
+  if (unsettled.delete(clientMessageId)) {
+    const words = agentSessionFailureWords(fact, {
+      surface: 'rejection',
+      agentName: host.agentName
+    })
+    host.settle({ clientMessageId, state: 'rejected', ...words })
   }
 }

@@ -121,6 +121,7 @@ export function areUpstreamStatusesEqual(
     prev.behind === next.behind &&
     prev.hasConfiguredPushTarget === next.hasConfiguredPushTarget &&
     prev.behindCommitsArePatchEquivalent === next.behindCommitsArePatchEquivalent &&
+    prev.upstreamOid === next.upstreamOid &&
     prev.head === next.head
   )
 }

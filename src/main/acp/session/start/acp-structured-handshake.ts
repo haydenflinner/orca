@@ -1,11 +1,11 @@
 import { withStructuredHistoryInvocation } from '../../../native-chat/agent-session-wire/acquisition/structured-agent-session-history-invocation'
 import { retryAcpRequest } from '../../protocol/acp-request-retry'
-import { observeAcpForkSupport } from '../../capabilities/acp-fork-support'
 import {
   acpInitializeChainsSupport,
-  observeAcpChainsSupport
+  observeAcpInitializeSupports
 } from '../../capabilities/acp-chains-support'
 import { withAcpStartupDiagnostic } from './acp-startup-diagnostic'
+import { acpUsableSessionMeta } from './acp-usable-session-meta'
 // An ACP child's handshake, run after the host has published it: initialize, reopen the chat's
 // session or start a new one, then return its protocol facts to the host. A saved session the agent
 // moved to another folder is reopened there; one it cannot reopen is replaced by a new one, with a
@@ -76,8 +76,8 @@ export async function initializeAcpStructuredSession(
   assertStarting()
   const initialized = await connection.initialize()
   assertStarting()
-  observeAcpForkSupport(spec.agent, initialized)
-  observeAcpChainsSupport(spec.agent, initialized)
+  observeAcpInitializeSupports(spec.agent, initialized)
+  const sessionMeta = acpUsableSessionMeta(launch, initialized, agentName)
   options.adoptInitialize(initialized)
   const meta = await spec.resolveSessionMeta?.({
     initialized,
@@ -93,7 +93,6 @@ export async function initializeAcpStructuredSession(
     antigravityChatAuth: launch.antigravityChatAuth
   })
   const setup = {
-    ...acpSessionStartMeta(spec, meta),
     authMethodId,
     authMethodUnavailableMessage: spec.authMethodUnavailableMessage,
     resumePreference: spec.resumePreference
@@ -103,6 +102,13 @@ export async function initializeAcpStructuredSession(
   let liveLane: AcpStructuredLane | null = null
   let takeover: Awaited<ReturnType<typeof acpReopenTakeover>> | null = null
   let replayed: AcpLoadHistoryFrame[] | null = null
+  // An agent already exited, its output still draining, has no session to take over in.
+  const takeoverPolicy = () => ({
+    over: connection.closed || connection.exited || input.abandoned(),
+    now: now(),
+    warn: (fields: { scope: string; error: unknown }) =>
+      deps.logger?.warn(ACP_REOPEN_FAILED, { ...fields, sessionId })
+  })
   const acceptSession = (accepted: NonNullable<typeof started>): void => {
     assertStarting()
     if (accepted.kind === 'new') {
@@ -112,6 +118,7 @@ export async function initializeAcpStructuredSession(
     options.adoptSession(accepted.response, accepted.kind === 'new' ? 'new' : 'loaded')
   }
   if (resume) {
+    const reopenMeta = launch.sessionMetaOnReopen ? sessionMeta : undefined
     const reopenIn = (cwd: string) =>
       retryAcpRequest(
         async () => {
@@ -120,7 +127,13 @@ export async function initializeAcpStructuredSession(
           const attaching = input.lanes.create(resume.sessionId, true)
           liveLane = attaching
           const opened = await connection.start(
-            { cwd, mcpServers: [], sessionId: resume.sessionId, ...setup },
+            {
+              cwd,
+              mcpServers: launch.mcpServers ?? [],
+              sessionId: resume.sessionId,
+              ...acpSessionStartMeta(spec, meta, reopenMeta),
+              ...setup
+            },
             acceptSession
           )
           assertStarting()
@@ -166,24 +179,27 @@ export async function initializeAcpStructuredSession(
       }
       if (!started) {
         withAcpStartupDiagnostic(error, connection, spec.dialect)
-        takeover = await acpReopenTakeover(
-          error,
-          resume,
-          {
-            // An agent already exited, its output still draining, has no session to take over in.
-            over: connection.closed || connection.exited || input.abandoned(),
-            now: now(),
-            warn: (fields) => deps.logger?.warn(ACP_REOPEN_FAILED, { ...fields, sessionId })
-          },
-          spec.dialect
-        )
+        takeover = await acpReopenTakeover(error, resume, takeoverPolicy(), spec.dialect)
       }
     }
   }
   if (!started || !liveLane) {
     liveLane?.dispose()
     input.lanes.clear()
-    started = await connection.start({ cwd: launch.cwd, mcpServers: [], ...setup }, acceptSession)
+    const undo = await launch.aroundNewSession?.(launch.cwd)
+    try {
+      started = await connection.start(
+        {
+          cwd: launch.cwd,
+          mcpServers: launch.mcpServers ?? [],
+          ...acpSessionStartMeta(spec, meta, sessionMeta),
+          ...setup
+        },
+        acceptSession
+      )
+    } finally {
+      await undo?.()
+    }
     assertStarting()
   }
   if (!liveLane) {
@@ -282,8 +298,7 @@ export async function initializeAcpStructuredSession(
       withdrawRequests: () => prompts.withdrawAll(),
       lane: liveLane,
       agentName,
-      chains: acpInitializeChainsSupport(initialized).chains,
-      midTurnPrompts: acpInitializeChainsSupport(initialized).midTurnPrompts,
+      ...acpInitializeChainsSupport(initialized),
       compactCommand: spec.dialect.compactCommand,
       now,
       settle: onSettled,

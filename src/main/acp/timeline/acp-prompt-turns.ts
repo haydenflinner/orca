@@ -194,6 +194,22 @@ export class AcpPromptTurns {
     return { promptId: turn, events: [] }
   }
 
+  /** Hook refusal ends immediately; normal completion waits for the prompt reply. */
+  awaitsReply(
+    turn: string,
+    end: Pick<AcpTurnEnding, 'stopReason' | 'durationMs' | 'hookBlock'>
+  ): boolean {
+    if (
+      this.current?.turn !== turn ||
+      !['end_turn', 'cancelled'].includes(end.stopReason) ||
+      end.hookBlock
+    ) {
+      return false
+    }
+    this.current.durationMs = end.durationMs
+    return true
+  }
+
   compacting(turn: string | undefined): AcpPromptTurn | undefined {
     return turn !== undefined && this.current?.turn === turn && this.current.compaction
       ? this.current
@@ -207,7 +223,7 @@ export class AcpPromptTurns {
     update: SessionUpdate | undefined
   ): boolean {
     const prompt = this.compacting(turn)
-    return prompt !== undefined && absorbAcpCompactionFrame(prompt, extension, update)
+    return prompt !== undefined && absorbAcpCompactionFrame(prompt, extension, update, this.dialect)
   }
 
   endCompaction(

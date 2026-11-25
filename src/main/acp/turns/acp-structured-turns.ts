@@ -5,7 +5,6 @@ import {
   agentSessionFailureFact,
   type SubmissionRejectionFact
 } from '../../../shared/agent-session/failures/agent-session-failure'
-import { agentSessionFailureWords } from '../../../shared/agent-session/failures/agent-session-failure-words'
 import type {
   AgentSessionCommandAdmission,
   StructuredAgentSessionCommandRun
@@ -16,8 +15,10 @@ import { AcpTurnIdlers } from './acp-turn-idlers'
 import { AcpSideSends } from './acp-structured-side-sends'
 import {
   acpAgentTurnFailed,
+  acpCancelForSteer,
   acpTurnAnswered,
   acpTurnErrored,
+  acpTurnRejected,
   type AcpTurnAnswerHost
 } from './acp-structured-turn-answers'
 import { AcpAuthRequiredError } from '../transport/acp-errors'
@@ -49,9 +50,8 @@ export class AcpStructuredTurns {
       accept: (clientMessageId) => this.accept(clientMessageId),
       reject: (clientMessageId, fact) => this.reject(clientMessageId, fact),
       finish: (send) => this.finish(send),
-      markEnded: () => {
-        this.ended = true
-      }
+      cancelled: (send) => this.stopAt !== null || this.steerCancelled === send,
+      markEnded: () => (this.ended = true)
     }
     this.side = new AcpSideSends(deps, {
       ended: () => this.ended,
@@ -134,9 +134,10 @@ export class AcpStructuredTurns {
   interruptForPermissionTransition(): void {
     if (this.active) {
       this.cancelForSteer()
-    } else if (this.deps.lane.openTurnId !== null) {
+    } else if (this.deps.lane.openTurnId !== null && !this.deps.lane.agentTurn.endUnasked()) {
       this.deps.withdrawRequests()
       void this.deps.connection.cancel().catch(() => undefined)
+      this.deps.lane.agentTurn.end('cancelled')
     }
   }
 
@@ -191,6 +192,14 @@ export class AcpStructuredTurns {
       throw new Error(`${this.deps.agentName} is still working`)
     }
     const { lane } = this.deps
+    const agentTurn = lane.openTurnId
+    // A backed-up journal admits the agent turn's end later; adopt the command after it.
+    if (lane.agentTurn.end() && agentTurn !== null) {
+      await lane.whenTurnLeaves(agentTurn)
+      if (this.active || this.ended) {
+        throw new Error(`${this.deps.agentName} is still working`)
+      }
+    }
     const send: Send = {
       clientMessageId: command.clientMessageId,
       prompt: acpCompactPrompt(command.instructions, this.deps.compactCommand),
@@ -261,6 +270,7 @@ export class AcpStructuredTurns {
     // A new message is not covered by a Stop of the agent's own earlier turn.
     this.stopAt = null
     this.active = send
+    lane.agentTurn.end()
     const opened = lane.translator.openPrompt(send.clientMessageId, send.requestedAt)
     lane.apply(opened.events)
     this.run(send, opened.promptId)
@@ -321,30 +331,17 @@ export class AcpStructuredTurns {
 
   /** Steering waits indefinitely for cancellation; Stop can still end the child. */
   private cancelForSteer(): void {
-    const send = this.active
-    if (!send) {
-      return
-    }
-    this.deps.withdrawRequests()
-    if (this.steerCancelled === send) {
-      return
-    }
-    this.steerCancelled = send
-    this.deps.connection.cancel().catch(() => {
-      // A failed write lets the next steer retry.
-      if (this.steerCancelled === send) {
-        this.steerCancelled = null
+    acpCancelForSteer({
+      deps: this.deps,
+      send: this.active,
+      steerCancelled: this.steerCancelled,
+      setSteerCancelled: (send) => {
+        this.steerCancelled = send
       }
     })
   }
 
   private reject(clientMessageId: string, fact: SubmissionRejectionFact): void {
-    if (this.unsettled.delete(clientMessageId)) {
-      const words = agentSessionFailureWords(fact, {
-        surface: 'rejection',
-        agentName: this.deps.agentName
-      })
-      this.deps.settle({ clientMessageId, state: 'rejected', ...words })
-    }
+    acpTurnRejected(this.deps, this.unsettled, clientMessageId, fact)
   }
 }

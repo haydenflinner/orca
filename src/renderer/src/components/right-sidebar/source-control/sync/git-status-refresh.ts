@@ -1,7 +1,6 @@
 import { getRuntimeGitStatus } from '@/runtime/source-control/git/runtime-git-status-client'
 import { getBranchLineTotalMergeBase } from './branch-line-total-request-gate'
 import {
-  clearAutomaticPushTargetUpstreamStatusCache,
   getCachedAutomaticPushTargetUpstreamStatus,
   invalidateAutomaticPushTargetUpstreamStatusCache,
   storeCachedAutomaticPushTargetUpstreamStatus
@@ -16,7 +15,6 @@ import type { GitPushTarget } from '../../../../../../shared/worktree/types'
 import {
   beginAutomaticUpstreamRefresh,
   claimAutomaticUpstreamRefreshApply,
-  clearGitStatusRefreshOrderingStateForTests,
   finishAutomaticUpstreamRefresh,
   shouldApplyAutomaticUpstreamRefresh,
   type AutomaticRefreshOrder
@@ -38,6 +36,7 @@ export type GitStatusRefreshDeps = {
     options?: {
       runtimeTarget?: RuntimeClientTarget | null
       applyUpstreamStatus?: boolean
+      background?: boolean
     }
   ) => Promise<GitUpstreamStatus | null>
 }
@@ -51,7 +50,8 @@ async function fetchAndApplyAutomaticUpstreamStatus({
   deps,
   order,
   head,
-  shouldApply
+  shouldApply,
+  background
 }: {
   /** The worktree owner's transport. */
   target: RuntimeClientTarget
@@ -64,6 +64,7 @@ async function fetchAndApplyAutomaticUpstreamStatus({
   /** HEAD the status read observed; tags the comparison so stale pushes are not claimed for a moved HEAD. */
   head?: string
   shouldApply?: () => boolean
+  background?: boolean
 }): Promise<GitUpstreamStatus | null> {
   if (!shouldApplyAutomaticUpstreamRefresh(worktreeId, order, shouldApply)) {
     return null
@@ -73,10 +74,7 @@ async function fetchAndApplyAutomaticUpstreamStatus({
     worktreePath,
     connectionId,
     pushTarget,
-    {
-      runtimeTarget: target,
-      applyUpstreamStatus: false
-    }
+    { runtimeTarget: target, applyUpstreamStatus: false, background }
   )
   if (!upstreamStatus) {
     if (pushTarget) {
@@ -97,11 +95,6 @@ async function fetchAndApplyAutomaticUpstreamStatus({
   const tagged = head ? { ...upstreamStatus, head } : upstreamStatus
   deps.setUpstreamStatus(worktreeId, tagged)
   return tagged
-}
-
-export function clearGitStatusRefreshOrderingForTests(): void {
-  clearGitStatusRefreshOrderingStateForTests()
-  clearAutomaticPushTargetUpstreamStatusCache()
 }
 
 // Stored comparisons carry the HEAD they were computed for so consumers can reject stale pushes.
@@ -194,7 +187,8 @@ export async function refreshGitStatusForWorktree({
         deps,
         order: refreshOrder,
         head: status.head,
-        shouldApply: request?.shouldApply
+        shouldApply: request?.shouldApply,
+        background: request?.admissionTier === 'background'
       })
       if (upstreamStatus) {
         // Briefly reuse unchanged automatic comparisons because explicit targets require several Git subprocesses.
@@ -227,7 +221,8 @@ export async function refreshGitStatusForWorktree({
           deps,
           order: refreshOrder,
           head: status.head,
-          shouldApply: request?.shouldApply
+          shouldApply: request?.shouldApply,
+          background: request?.admissionTier === 'background'
         })
         return
       }
@@ -245,7 +240,8 @@ export async function refreshGitStatusForWorktree({
       deps,
       order: refreshOrder,
       head: status.head,
-      shouldApply: request?.shouldApply
+      shouldApply: request?.shouldApply,
+      background: request?.admissionTier === 'background'
     })
   } finally {
     finishAutomaticUpstreamRefresh(worktreeId)

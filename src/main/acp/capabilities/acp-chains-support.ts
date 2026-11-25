@@ -1,5 +1,6 @@
 import type { AgentSessionOptionsResult } from '../../../shared/agent-session/options/protocol/agent-session-options-result'
 import type { InitializeResponse } from '../generated/acp-protocol.generated'
+import { observeAcpForkSupport } from './acp-fork-support'
 
 export type AcpChainsSupport = {
   /** Concurrent `session/prompt` on a named lane via `_meta["cognition.ai/chain"]`. */
@@ -26,6 +27,12 @@ export function acpInitializeChainsSupport(initialized: InitializeResponse): Acp
     chains: meta?.['cognition.ai/chains'] === true,
     midTurnPrompts: meta?.['cognition.ai/midTurnPrompts'] === true
   }
+}
+
+/** Record every initialize-time capability verdict Orca keeps for the agent. */
+export function observeAcpInitializeSupports(agent: string, initialized: InitializeResponse): void {
+  observeAcpForkSupport(agent, initialized)
+  observeAcpChainsSupport(agent, initialized)
 }
 
 export function observeAcpChainsSupport(agent: string, initialized: InitializeResponse): void {

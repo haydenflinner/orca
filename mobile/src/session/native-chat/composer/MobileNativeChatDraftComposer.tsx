@@ -1,7 +1,5 @@
-import {
-  MobileNativeChatComposer,
-  type MobileNativeChatComposerProps
-} from './MobileNativeChatComposer'
+import { MobileNativeChatComposer } from './MobileNativeChatComposer'
+import type { MobileNativeChatComposerProps } from './mobile-native-chat-composer-props'
 import { useMobileNativeChatDraft } from './drafts/mobile-native-chat-draft-store'
 import { useMobileNativeChatVoice } from '../voice/use-mobile-native-chat-voice'
 import type { NativeChatMessage } from '../../../../../src/shared/native-chat/native-chat-types'

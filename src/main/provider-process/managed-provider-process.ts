@@ -1,12 +1,9 @@
-import type { ProviderChild } from './provider-child'
-import { spawnProviderProcess, type ProviderProcessSpawner } from './provider-process-spawn'
-import {
-  openSessionParkedProvider,
-  providerParkSessionKey,
-  providerParkSupported
-} from './park/provider-park'
+import { awaitProviderChildSpawn, directOwnerUnreaped, type ProviderChild } from './provider-child'
+import { DirectProviderChild } from './direct-provider-child'
+import { registerAgentProcess } from '../memory/agent-process-registry'
+import { spawnManagedChild } from './managed-provider-child'
+import type { ProviderProcessSpawner } from './provider-process-spawn'
 import { RetryableProcessExitProof } from '@orca/process-host/retryable-process-exit-proof'
-import { spawnProcess } from '@orca/process-host'
 import type { ProviderProcessLaunch } from './provider-process-launch'
 import { processEnvWithoutAgentSession } from '../../shared/agent-launch/startup/parent-agent-session-env'
 import {
@@ -46,6 +43,8 @@ type ManagedProviderProcessOptions = {
   /** Defaults to the root-only policy; only a provider with its own reaper overrides it. */
   policy?: (supervised: boolean) => ProviderProcessClosePolicy
   spawnImpl?: ProviderProcessSpawner
+  /** False keeps the launch in this app even where the agent host is available. */
+  allowHost?: boolean
   platform?: NodeJS.Platform
   inheritedEnv?: NodeJS.ProcessEnv
   /** Defaults to accepting root exit or delivered writer termination without descendant proof. */
@@ -158,11 +157,20 @@ export function spawnManagedProviderProcess(
   const exitPromise = new Promise<void>((resolve) => {
     resolveExit = resolve
   })
+  // Once the process exits or its pipes close, its pid can name another process.
+  let releaseAgentMemory: (() => void) | null = null
+  let agentMemoryRetired = false
+  const retireAgentMemory = (): void => {
+    agentMemoryRetired = true
+    releaseAgentMemory?.()
+    releaseAgentMemory = null
+  }
   const observeExit = (exit: ProviderProcessExit): void => {
     if (observed) {
       return
     }
     observed = exit
+    retireAgentMemory()
     resolveExit()
     for (const listener of listeners) {
       listener(exit)
@@ -182,9 +190,25 @@ export function spawnManagedProviderProcess(
     spawnError ??= error
   })
   child.on('close', (code, signal) => {
+    retireAgentMemory()
     const processless = spawnFailed && child.pid === undefined
     if (processless) {
       observeExit({ code, signal, processless })
+    }
+  })
+  // Hosted launches publish their pid only once the agent host starts them.
+  void awaitProviderChildSpawn(child).then(() => {
+    if (child.pid !== undefined && !agentMemoryRetired && !child.numericIdentityRetired) {
+      // A directly spawned owner keeps its pid until reaped, so its tree (what it still holds after the
+      // CLI exits) counts until then. Otherwise, once the leader exits or its outcome is lost, its pid
+      // can be reused while cleanup still runs.
+      releaseAgentMemory = registerAgentProcess(
+        (child instanceof DirectProviderChild ? child.raw.pid : undefined) ?? child.pid,
+        child.pid,
+        () =>
+          (child instanceof DirectProviderChild ? directOwnerUnreaped(child.raw) : undefined) ??
+          (child.leaderExited !== true && child.numericIdentityRetired !== true)
+      )
     }
   })
   const rootVerdict = (): DescendantTreeVerdict =>
@@ -288,29 +312,6 @@ export function spawnManagedProviderProcess(
       return known ? Promise.resolve(known) : close(tree, closeOptions)
     }
   }
-}
-
-/** Session providers park under a detached supervisor; custom spawners and one-shots stay in-process. */
-function spawnManagedChild(
-  launch: ProviderProcessLaunch,
-  spec: ReturnType<typeof createProviderSpawnSpec>,
-  options: ManagedProviderProcessOptions
-): ProviderChild {
-  const localSpawn = options.spawnImpl === undefined || options.spawnImpl === spawnProcess
-  const sessionId =
-    options.park === false || !localSpawn || options.lifetime === 'one-shot'
-      ? null
-      : providerParkSessionKey(spec.env)
-  if (sessionId && providerParkSupported()) {
-    const parked = openSessionParkedProvider(
-      { command: launch.command, args: launch.args, cwd: spec.cwd, env: spec.env },
-      sessionId
-    )
-    if (parked) {
-      return parked.child
-    }
-  }
-  return spawnProviderProcess(spec, options.spawnImpl)
 }
 
 /** A premature data listener would drain stdout before a late reader can subscribe. */

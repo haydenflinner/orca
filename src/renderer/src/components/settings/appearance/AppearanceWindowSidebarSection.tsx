@@ -31,11 +31,16 @@ import { getStatusBarUsageFormatEntry } from './appearance-status-bar-usage-form
 import { StatusBarUsageFormatSetting } from './StatusBarUsageFormatSetting'
 
 import { useTranslate } from '@/i18n/use-translate'
-import { matchesSettingsSearch, normalizeSettingsSearchQuery } from '../search/settings-search'
+import {
+  matchesSettingsSearch,
+  normalizeSettingsSearchQuery,
+  type SettingsSearchEntry
+} from '../search/settings-search'
 
 type AppearanceWindowSidebarSectionProps = {
   settings: GlobalSettings
   updateSettings: (updates: Partial<GlobalSettings>) => void
+  tilingWindowModeEntry?: SettingsSearchEntry
   forceVisiblePrimary?: boolean
 }
 
@@ -67,9 +72,42 @@ function recordStatusBarToggleInteraction(
 }
 
 /** Window & Sidebar appearance section: sidebar/chrome appearance, status bar controls, and layout advanced settings. */
+function SidebarButtonToggle({
+  title,
+  description,
+  keywords,
+  switchLabel,
+  switchDescription,
+  checked,
+  onChange,
+  ariaLabel
+}: {
+  title: string
+  description?: string
+  keywords?: string[]
+  switchLabel?: string
+  switchDescription?: string
+  checked: boolean
+  onChange: () => void
+  ariaLabel?: string
+}): React.JSX.Element {
+  return (
+    <SearchableSetting title={title} description={description} keywords={keywords}>
+      <SettingsSwitchRow
+        label={switchLabel ?? title}
+        description={switchDescription}
+        checked={checked}
+        onChange={onChange}
+        ariaLabel={ariaLabel}
+      />
+    </SearchableSetting>
+  )
+}
+
 export function AppearanceWindowSidebarSection({
   settings,
   updateSettings,
+  tilingWindowModeEntry,
   forceVisiblePrimary = false
 }: AppearanceWindowSidebarSectionProps): React.JSX.Element {
   const t = useTranslate()
@@ -105,25 +143,28 @@ export function AppearanceWindowSidebarSection({
   const statusBarControlMatches =
     matchesSettingsSearch(searchQuery, usagePercentageDisplayEntry) ||
     matchesSettingsSearch(searchQuery, statusBarUsageFormatEntry) ||
-    visibleStatusBarToggles.some((toggle) =>
-      matchesSettingsSearch(searchQuery, {
-        title: toggle.title,
-        description: toggle.description,
-        keywords: toggle.keywords
-      })
-    )
-  const sidebarAdvancedMatches = matchesSettingsSearch(searchQuery, [
-    workspaceCardLayoutEntry,
-    ...sidebarEntries
-  ])
-  const fileExplorerAdvancedMatches = matchesSettingsSearch(searchQuery, layoutEntries)
+    visibleStatusBarToggles.some((toggle) => matchesSettingsSearch(searchQuery, toggle))
   const showStatusBarControls = !isSearching || statusBarSectionMatches || statusBarControlMatches
-  const showSidebarAdvanced = !isSearching || sidebarAdvancedMatches
-  const showFileExplorerAdvanced = !isSearching || fileExplorerAdvancedMatches
+  const showSidebarAdvanced =
+    !isSearching ||
+    matchesSettingsSearch(searchQuery, [workspaceCardLayoutEntry, ...sidebarEntries])
+  const showFileExplorerAdvanced = !isSearching || matchesSettingsSearch(searchQuery, layoutEntries)
   const showAdvanced = showSidebarAdvanced || showFileExplorerAdvanced
 
   return (
     <>
+      {tilingWindowModeEntry && (
+        <SearchableSetting {...tilingWindowModeEntry} forceVisible={forceVisiblePrimary}>
+          <SettingsSwitchRow
+            label={tilingWindowModeEntry.title}
+            description={tilingWindowModeEntry.description}
+            checked={settings.linuxTilingWindowMode === true}
+            onChange={() =>
+              updateSettings({ linuxTilingWindowMode: settings.linuxTilingWindowMode !== true })
+            }
+          />
+        </SearchableSetting>
+      )}
       <SearchableSetting
         title={leftSidebarAppearanceEntry.title}
         description={leftSidebarAppearanceEntry.description}
@@ -192,23 +233,19 @@ export function AppearanceWindowSidebarSection({
             {visibleStatusBarToggles.map((toggle) => {
               const enabled = statusBarItems.includes(toggle.id)
               return (
-                <SearchableSetting
+                <SidebarButtonToggle
                   key={toggle.id}
                   title={toggle.title}
                   description={toggle.description}
                   keywords={toggle.keywords}
-                >
-                  <SettingsSwitchRow
-                    label={toggle.title}
-                    description={toggle.toggleDescription}
-                    checked={enabled}
-                    onChange={() => {
-                      recordStatusBarToggleInteraction(toggle.id, recordFeatureInteraction)
-                      toggleStatusBarItem(toggle.id)
-                    }}
-                    ariaLabel={toggle.title}
-                  />
-                </SearchableSetting>
+                  switchDescription={toggle.toggleDescription}
+                  checked={enabled}
+                  onChange={() => {
+                    recordStatusBarToggleInteraction(toggle.id, recordFeatureInteraction)
+                    toggleStatusBarItem(toggle.id)
+                  }}
+                  ariaLabel={toggle.title}
+                />
               )
             })}
           </SettingsGroupNestedRows>
@@ -257,113 +294,82 @@ export function AppearanceWindowSidebarSection({
                 />
               </SearchableSetting>
 
-              <SearchableSetting
+              <SidebarButtonToggle
                 title={t('auto.components.settings.AppearancePane.e0f9902e18', 'Show tasks button')}
                 description={sidebarEntries[0]?.description}
                 keywords={sidebarEntries[0]?.keywords ?? ['tasks', 'sidebar', 'button']}
-              >
-                <SettingsSwitchRow
-                  label={t(
-                    'auto.components.settings.AppearancePane.e0f9902e18',
-                    'Show tasks button'
-                  )}
-                  checked={settings.showTasksButton !== false}
-                  onChange={() =>
-                    updateSettings({ showTasksButton: !(settings.showTasksButton !== false) })
-                  }
-                />
-              </SearchableSetting>
+                checked={settings.showTasksButton !== false}
+                onChange={() =>
+                  updateSettings({ showTasksButton: !(settings.showTasksButton !== false) })
+                }
+              />
 
-              <SearchableSetting
+              <SidebarButtonToggle
                 title={t(
                   'auto.components.settings.AppearancePane.showSearchButton',
                   'Show search button'
                 )}
                 description={sidebarEntries[3]?.description}
                 keywords={sidebarEntries[3]?.keywords ?? ['search', 'sidebar', 'button']}
-              >
-                <SettingsSwitchRow
-                  label={t(
-                    'auto.components.settings.AppearancePane.showSearchButton',
-                    'Show search button'
-                  )}
-                  checked={settings.showSearchButton !== false}
-                  onChange={() =>
-                    updateSettings({ showSearchButton: !(settings.showSearchButton !== false) })
-                  }
-                />
-              </SearchableSetting>
+                checked={settings.showSearchButton !== false}
+                onChange={() =>
+                  updateSettings({ showSearchButton: !(settings.showSearchButton !== false) })
+                }
+              />
 
-              <SearchableSetting
+              <SidebarButtonToggle
                 title={t(
                   'auto.components.settings.AppearancePane.7be0027489',
                   'Show automations button'
                 )}
                 description={sidebarEntries[1]?.description}
                 keywords={sidebarEntries[1]?.keywords ?? ['automations', 'automation', 'schedule']}
-              >
-                <SettingsSwitchRow
-                  label={t(
-                    'auto.components.settings.AppearancePane.7be0027489',
-                    'Show automations button'
-                  )}
-                  checked={settings.showAutomationsButton !== false}
-                  onChange={() =>
-                    updateSettings({
-                      showAutomationsButton: !(settings.showAutomationsButton !== false)
-                    })
-                  }
-                />
-              </SearchableSetting>
+                checked={settings.showAutomationsButton !== false}
+                onChange={() =>
+                  updateSettings({
+                    showAutomationsButton: !(settings.showAutomationsButton !== false)
+                  })
+                }
+              />
 
-              <SearchableSetting
+              <SidebarButtonToggle
                 title={t(
                   'auto.components.settings.AppearancePane.d2b4ddbea0',
                   'Show Orca Mobile button'
                 )}
                 description={sidebarEntries[2]?.description}
                 keywords={sidebarEntries[2]?.keywords ?? ['mobile', 'phone', 'sidebar']}
-              >
-                <SettingsSwitchRow
-                  label={t(
-                    'auto.components.settings.AppearancePane.d2b4ddbea0',
-                    'Show Orca Mobile button'
-                  )}
-                  // Explain the remaining Toolbox route so hiding the shortcut cannot imply feature removal.
-                  description={t(
-                    'auto.components.settings.AppearancePane.61d842eca0',
-                    'Show the Orca Mobile shortcut in the sidebar. It remains available from Toolbox.'
-                  )}
-                  checked={settings.showMobileButton !== false}
-                  onChange={() =>
-                    updateSettings({ showMobileButton: !(settings.showMobileButton !== false) })
-                  }
-                />
-              </SearchableSetting>
+                // Explain the remaining Toolbox route so hiding the shortcut cannot imply feature removal.
+                switchDescription={t(
+                  'auto.components.settings.AppearancePane.61d842eca0',
+                  'Show the Orca Mobile shortcut in the sidebar. It remains available from Toolbox.'
+                )}
+                checked={settings.showMobileButton !== false}
+                onChange={() =>
+                  updateSettings({ showMobileButton: !(settings.showMobileButton !== false) })
+                }
+              />
 
-              <SearchableSetting
+              <SidebarButtonToggle
                 title={getShowPinnedWorktreesInGroupsEntry().title}
                 description={getShowPinnedWorktreesInGroupsEntry().description}
                 keywords={getShowPinnedWorktreesInGroupsEntry().keywords}
-              >
-                <SettingsSwitchRow
-                  label={t(
-                    'auto.components.settings.AppearancePane.showPinnedWorktreesInGroups.title',
-                    'Also show pinned worktrees in their original lists'
-                  )}
-                  // This opt-in duplicates pinned worktrees into natural groups while preserving Pinned.
-                  description={t(
-                    'auto.components.settings.AppearancePane.showPinnedWorktreesInGroups.description',
-                    'Pinned worktrees stay in Pinned and also appear in All, Project, Status, and PR.'
-                  )}
-                  checked={settings.showPinnedWorktreesInGroups === true}
-                  onChange={() =>
-                    updateSettings({
-                      showPinnedWorktreesInGroups: !(settings.showPinnedWorktreesInGroups === true)
-                    })
-                  }
-                />
-              </SearchableSetting>
+                switchLabel={t(
+                  'auto.components.settings.AppearancePane.showPinnedWorktreesInGroups.title',
+                  'Also show pinned worktrees in their original lists'
+                )}
+                // This opt-in duplicates pinned worktrees into natural groups while preserving Pinned.
+                switchDescription={t(
+                  'auto.components.settings.AppearancePane.showPinnedWorktreesInGroups.description',
+                  'Pinned worktrees stay in Pinned and also appear in All, Project, Status, and PR.'
+                )}
+                checked={settings.showPinnedWorktreesInGroups === true}
+                onChange={() =>
+                  updateSettings({
+                    showPinnedWorktreesInGroups: !(settings.showPinnedWorktreesInGroups === true)
+                  })
+                }
+              />
             </SettingsGroupSubsection>
           ) : null}
 
@@ -371,43 +377,36 @@ export function AppearanceWindowSidebarSection({
             <SettingsGroupSubsection
               title={t('auto.components.settings.AppearancePane.8e374ce9a3', 'File explorer')}
             >
-              <SearchableSetting
+              <SidebarButtonToggle
                 title={
                   layoutEntries[0]?.title ??
                   t('auto.components.settings.AppearancePane.7e958ee950', 'Show Git-ignored files')
                 }
                 description={layoutEntries[0]?.description}
                 keywords={layoutEntries[0]?.keywords ?? ['git', 'gitignore', 'ignored']}
-              >
-                <SettingsSwitchRow
-                  label={t(
-                    'auto.components.settings.AppearancePane.7e958ee950',
-                    'Show Git-ignored files'
-                  )}
-                  description={t(
-                    'auto.components.settings.AppearancePane.gitIgnoredGlossary',
-                    'Files matched by .gitignore.'
-                  )}
-                  checked={settings.showGitIgnoredFiles ?? true}
-                  onChange={() =>
-                    updateSettings({
-                      showGitIgnoredFiles: !(settings.showGitIgnoredFiles ?? true)
-                    })
-                  }
-                />
-              </SearchableSetting>
-              <SearchableSetting {...followSymlinkEntry}>
-                <SettingsSwitchRow
-                  label={followSymlinkEntry.title}
-                  description={followSymlinkEntry.description}
-                  checked={settings.followSymlinkedDirectories ?? false}
-                  onChange={() =>
-                    updateSettings({
-                      followSymlinkedDirectories: !settings.followSymlinkedDirectories
-                    })
-                  }
-                />
-              </SearchableSetting>
+                switchLabel={t(
+                  'auto.components.settings.AppearancePane.7e958ee950',
+                  'Show Git-ignored files'
+                )}
+                switchDescription={t(
+                  'auto.components.settings.AppearancePane.gitIgnoredGlossary',
+                  'Files matched by .gitignore.'
+                )}
+                checked={settings.showGitIgnoredFiles ?? true}
+                onChange={() =>
+                  updateSettings({ showGitIgnoredFiles: !(settings.showGitIgnoredFiles ?? true) })
+                }
+              />
+              <SidebarButtonToggle
+                {...followSymlinkEntry}
+                switchDescription={followSymlinkEntry.description}
+                checked={settings.followSymlinkedDirectories ?? false}
+                onChange={() =>
+                  updateSettings({
+                    followSymlinkedDirectories: !settings.followSymlinkedDirectories
+                  })
+                }
+              />
             </SettingsGroupSubsection>
           ) : null}
         </SettingsGroupDisclosure>

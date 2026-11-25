@@ -31,8 +31,8 @@ type ShortcutKeyComboProps = {
   separatorClassName?: string
   // Override cap colors when chips sit on a non-default surface (e.g. a filled primary card).
   keyCapClassName?: string
-  // Dense caps for row badges that must not grow list height.
-  compact?: boolean
+  /** `compact`: a small flat cap that sits inside a line of text or a button label. */
+  size?: 'default' | 'compact'
   renderKey?: (key: string) => React.ReactNode
   // Double taps use repeated labels/glyphs with a space instead of +.
   doubleTap?: boolean
@@ -43,7 +43,7 @@ export function ShortcutKeyCombo({
   className,
   separatorClassName,
   keyCapClassName,
-  compact = false,
+  size = 'default',
   renderKey,
   doubleTap = false
 }: ShortcutKeyComboProps): React.JSX.Element {
@@ -65,15 +65,17 @@ export function ShortcutKeyCombo({
         <React.Fragment key={`${key}-${index}`}>
           <KeyCap
             label={renderKey ? renderKey(key) : key}
-            className={keyCapClassName}
-            compact={compact}
+            className={cn(
+              size === 'compact' && 'min-w-0 px-1 py-0 text-2xs shadow-none',
+              keyCapClassName
+            )}
           />
           {/* Mac uses adjacent glyphs; Windows/Linux use +. Double taps use a space. */}
           {!isMac && !doubleTap && index < keys.length - 1 ? (
             <span
               className={
                 separatorClassName ??
-                (compact
+                (size === 'compact'
                   ? 'text-[9px] text-muted-foreground/60'
                   : 'mx-0.5 text-xs text-muted-foreground')
               }

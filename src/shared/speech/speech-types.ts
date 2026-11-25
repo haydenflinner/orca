@@ -165,3 +165,10 @@ export type DictationContext = {
   repoTerms?: DictationTerm[]
   repoName?: string
 }
+
+export type VoiceGlobalSettings = {
+  /** Voice/dictation settings; persistence merge hydrates getDefaultSettings() values for older profiles. */
+  voice?: VoiceSettings
+  /** One-shot migration flag for the Auto dictation-mode default; after migration an explicit Toggle sticks. */
+  voiceDictationModeDefaultedToAuto?: boolean
+}

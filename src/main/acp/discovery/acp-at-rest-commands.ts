@@ -1,5 +1,4 @@
-import { observeAcpForkSupport } from '../capabilities/acp-fork-support'
-import { observeAcpChainsSupport } from '../capabilities/acp-chains-support'
+import { observeAcpInitializeSupports } from '../capabilities/acp-chains-support'
 import { join } from 'node:path'
 import { PrioritySemaphore } from '../../../shared/concurrency/priority-semaphore'
 import {
@@ -151,7 +150,7 @@ export class AcpAtRestCommandCatalog extends AtRestCommandCatalog {
               answer({ commands: undefined, fromAgent: false })
               return
             }
-            const location = spec.visualsSkill
+            const location = spec.skillRoots
               ? await awaitAcpDiscovery(
                   (deps.resolveVisualsSkill ?? resolveNativeChatVisualsSkillLocation)(),
                   signal
@@ -159,10 +158,10 @@ export class AcpAtRestCommandCatalog extends AtRestCommandCatalog {
               : null
             check()
             const skill =
-              location && spec.visualsSkill
+              location && spec.skillRoots
                 ? await awaitAcpDiscovery(
-                    spec.visualsSkill({
-                      skill: location,
+                    spec.skillRoots({
+                      roots: [location],
                       version: version.version,
                       env: launch.env
                     }),
@@ -184,7 +183,8 @@ export class AcpAtRestCommandCatalog extends AtRestCommandCatalog {
               env: { ...launch.env, ...skill?.env },
               args: [
                 ...invocation.prefixArgs,
-                ...spec.args({ fullAccess: false, pluginDir: skill?.pluginDir ?? null }),
+                ...spec.args({ fullAccess: false, pluginDirs: skill?.pluginDirs ?? [] }),
+                ...(skill?.args ?? []),
                 ...folderArgs
               ]
             })
@@ -195,8 +195,7 @@ export class AcpAtRestCommandCatalog extends AtRestCommandCatalog {
                 connection,
                 dialect: spec.dialect,
                 onInitialize: (initialized) => {
-                  observeAcpForkSupport(spec.agent, initialized)
-                  observeAcpChainsSupport(spec.agent, initialized)
+                  observeAcpInitializeSupports(spec.agent, initialized)
                 },
                 cwd,
                 signal,
