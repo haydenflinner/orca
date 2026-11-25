@@ -47,6 +47,8 @@
 3 src/main/ai-vault/scan-service/session-scanner-service-entry-path.ts
 12 src/main/ai-vault/scan-service/session-scanner-service-spawn.ts
 2 src/main/ai-vault/scanners/devin/session-scanner-devin-db.ts
+1 src/main/ai-vault/scanners/devin/session-scanner-devin-db-conversation.ts
+2 src/main/ai-vault/scanners/devin/session-scanner-devin-db-sessions.ts
 2 src/main/ai-vault/scanners/hermes/hermes-state-db-conversations.ts
 3 src/main/ai-vault/scanners/hermes/hermes-state-db-schema.ts
 1 src/main/ai-vault/scanners/hermes/session-scanner-hermes-sources.ts

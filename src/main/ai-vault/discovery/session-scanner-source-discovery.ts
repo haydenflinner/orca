@@ -9,6 +9,7 @@ import { zcodeDiscoveries } from '../scanners/zcode/session-scanner-zcode-source
 import { hermesDiscoveries } from '../scanners/hermes/session-scanner-hermes-sources'
 import { antigravityDiscoveries } from '../scanners/antigravity/session-scanner-antigravity-sources'
 import { cursorAcpDiscoveries } from '../scanners/cursor/session-scanner-cursor-acp-sessions'
+import { devinDbDiscoveries } from '../scanners/devin/session-scanner-devin-db-sessions'
 import { AI_VAULT_AGENT_SOURCES, type AiVaultAgentSource } from './session-scanner-agent-sources'
 import { normalizedWslHomeDirs, realDirAliases } from './session-scanner-roots'
 import { configureOpenCodeWslReaders } from '../scanners/opencode/reader-transport/session-scanner-opencode-wsl-client'
@@ -32,7 +33,8 @@ export async function discoverAiVaultSessionSources(args: {
       ...zcodeDiscoveries(options, wslHomeDirs, limitPerAgent, issues),
       ...hermesDiscoveries(options, wslHomeDirs, limitPerAgent, issues),
       ...antigravityDiscoveries(options, wslHomeDirs, limitPerAgent, issues),
-      ...cursorAcpDiscoveries(options, wslHomeDirs, limitPerAgent, issues)
+      ...cursorAcpDiscoveries(options, wslHomeDirs, limitPerAgent, issues),
+      ...devinDbDiscoveries(options, wslHomeDirs, limitPerAgent, issues)
     ]),
     Promise.all(
       Object.entries(AI_VAULT_AGENT_SOURCES).flatMap(([agent, source]) =>

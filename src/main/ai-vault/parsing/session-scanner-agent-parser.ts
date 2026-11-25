@@ -10,6 +10,10 @@ import { parseQoderSessionFile } from '../scanners/qoder/session-scanner-qoder-p
 import { parseCodebuddySessionFile } from '../scanners/codebuddy/session-scanner-codebuddy-parser'
 import type { AiVaultSession } from '../../../shared/ai-vault/contracts/ai-vault-types'
 import { parseDevinSessionFile } from '../scanners/devin/session-scanner-devin-parser'
+import {
+  parseDevinDbSession,
+  splitDevinDbSessionCandidate
+} from '../scanners/devin/session-scanner-devin-db-sessions'
 import { parseAntigravitySessionFile } from '../scanners/antigravity/session-scanner-antigravity-parser'
 import { parseDroidSessionFile } from '../scanners/droid/session-scanner-droid-parser'
 import { parseClineSessionFile } from '../scanners/cline/session-scanner-cline-parser'
@@ -160,8 +164,12 @@ export async function parseAgentSessionFile(
       return parseDroidSessionFile(candidate.file, platform, messages)
     case 'cline':
       return parseClineSessionFile(candidate.file, platform, messages, signal)
-    case 'devin':
-      return parseDevinSessionFile(candidate.file, platform, messages, signal)
+    case 'devin': {
+      const dbSession = splitDevinDbSessionCandidate(candidate.file.path)
+      return dbSession
+        ? parseDevinDbSession(dbSession, candidate.file, platform, messages)
+        : parseDevinSessionFile(candidate.file, platform, messages, signal)
+    }
     case 'kimi':
       return parseKimiSessionFile(candidate.file, platform, messages, signal)
     case 'muse':
