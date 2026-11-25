@@ -26,11 +26,19 @@ function newestLocalProjectParent(store: Pick<Store, 'getRepos'>): string | unde
 
 export function registerRepoFolderPickerHandlers(
   mainWindow: BrowserWindow,
-  store: Pick<Store, 'getRepos'>
+  store: Pick<Store, 'getRepos' | 'getUI' | 'updateUI'>
 ): void {
-  const projectPickerOptions = (
-    properties: OpenDialogOptions['properties']
-  ): OpenDialogOptions => ({ defaultPath: newestLocalProjectParent(store), properties })
+  const projectPickerOptions = (properties: OpenDialogOptions['properties']): OpenDialogOptions => {
+    // A moved or deleted path is ignored by the OS dialog, which falls back to its default.
+    const defaultPath = store.getUI().lastProjectPickerDirectory ?? newestLocalProjectParent(store)
+    return { defaultPath, properties }
+  }
+  const rememberPickedDirectory = (filePaths: string[]): void => {
+    const directory = filePaths[0] ? dirname(filePaths[0]) : undefined
+    if (directory && directory !== store.getUI().lastProjectPickerDirectory) {
+      store.updateUI({ lastProjectPickerDirectory: directory })
+    }
+  }
 
   ipcMain.handle('repos:pickFolder', async () => {
     const result = await showSingleFlightOpenDialog(
@@ -40,6 +48,7 @@ export function registerRepoFolderPickerHandlers(
     if (result.canceled || result.filePaths.length === 0) {
       return null
     }
+    rememberPickedDirectory(result.filePaths)
     return result.filePaths[0]
   })
 
@@ -51,6 +60,7 @@ export function registerRepoFolderPickerHandlers(
     if (result.canceled || result.filePaths.length === 0) {
       return []
     }
+    rememberPickedDirectory(result.filePaths)
     return result.filePaths
   })
 
@@ -64,6 +74,7 @@ export function registerRepoFolderPickerHandlers(
     if (result.canceled || result.filePaths.length === 0) {
       return null
     }
+    rememberPickedDirectory(result.filePaths)
     return result.filePaths[0]
   })
 }
